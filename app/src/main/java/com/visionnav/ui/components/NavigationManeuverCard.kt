@@ -106,7 +106,7 @@ fun NavigationManeuverCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                Row(verticalAlignment = Alignment.Baseline) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "${maneuver.distanceMeters}m",
                         color = VisionAmberPrimary,

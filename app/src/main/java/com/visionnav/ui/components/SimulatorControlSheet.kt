@@ -13,18 +13,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +51,9 @@ fun SimulatorControlSheet(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -58,6 +61,7 @@ fun SimulatorControlSheet(
             .background(VisionSurfaceDark)
             .border(2.dp, Color(0xFF333333), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
             .padding(20.dp)
+            .verticalScroll(scrollState)
     ) {
         // Sheet Header
         Row(
@@ -74,7 +78,7 @@ fun SimulatorControlSheet(
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Test PRD scenarios without hardware sensors",
+                    text = "Phase 3: GPS • Compass • Geocoding Simulation",
                     color = VisionTextMediumContrast,
                     fontSize = 12.sp
                 )
@@ -89,13 +93,38 @@ fun SimulatorControlSheet(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Divider(color = Color(0xFF2A2A2A))
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+        HorizontalDivider(color = Color(0xFF2A2A2A))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Navigation Lifecycle Scenarios
+        // SECTION 1: HARDWARE MODE VS SIMULATOR TOGGLE
         Text(
-            text = "NAVIGATION LIFECYCLE",
+            text = "LOCATION & SENSOR SOURCE",
+            color = VisionAmberPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SimButton(
+                text = if (uiState.isSimulatorMode) "🔴 SWITCH TO LIVE GPS" else "🟢 SWITCH TO SIMULATOR",
+                color = if (uiState.isSimulatorMode) VisionCyanVoice else Color(0xFF2A2A2A),
+                textColor = if (uiState.isSimulatorMode) Color.Black else VisionTextHighContrast
+            ) {
+                viewModel.toggleSimulationMode()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 2: SIMULATED MOVEMENT & SENSOR CONTROLS
+        Text(
+            text = "SPATIAL TRACKING CONTROLS",
             color = VisionAmberPrimary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -108,26 +137,82 @@ fun SimulatorControlSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            SimButton(text = "1. Speak Destination") {
-                viewModel.processSpokenDestination("Metropolitan Museum")
+            SimButton(text = "🚶 Walk Step (+12m)") {
+                viewModel.simulatorStepForward()
             }
-            SimButton(text = "2. Start Walking") {
-                viewModel.startNavigation()
+            SimButton(text = "🧭 Turn Heading +45°") {
+                viewModel.simulatorRotateHeading(45f)
             }
-            SimButton(text = "3. Next Maneuver") {
-                viewModel.stepToNextManeuver()
+            SimButton(text = "🧭 Face North (0°)") {
+                viewModel.simulatorRotateHeading(-360f)
             }
-            SimButton(text = "4. Arrived") {
-                viewModel.simulateArrival()
+            SimButton(text = "⚠️ Inject GPS Teleport Jump", color = Color(0xFF552222)) {
+                viewModel.simulatorInjectGpsOutlier()
             }
-            SimButton(text = "Reset All", color = Color(0xFF444444)) {
-                viewModel.resetToIdle()
+            SimButton(text = "🌫️ Inject Low Accuracy (±38m)", color = Color(0xFF443311)) {
+                viewModel.simulatorSetLowAccuracy()
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // 🚨 P0 Safety Collision Test Section
+        // SECTION 3: GEOCODING TEST DESTINATIONS
+        Text(
+            text = "GEOCODING DESTINATIONS (VOICE / MOCK)",
+            color = VisionCyanVoice,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SimButton(text = "Central Railway Station") {
+                viewModel.processSpokenDestination("Chennai Central")
+            }
+            SimButton(text = "City Hospital (Ambiguity Test)") {
+                viewModel.processSpokenDestination("City Hospital")
+            }
+            SimButton(text = "Public Library") {
+                viewModel.processSpokenDestination("Public Library")
+            }
+            SimButton(text = "Metro Station Gate 2") {
+                viewModel.processSpokenDestination("Metro Station")
+            }
+        }
+
+        // Ambiguous Candidates Disambiguation UI
+        if (uiState.ambiguousCandidates.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "MULTIPLE DESTINATIONS FOUND — SELECT ONE:",
+                color = VisionAmberPrimary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                uiState.ambiguousCandidates.forEach { candidate ->
+                    SimButton(
+                        text = "📍 ${candidate.displayName}",
+                        color = Color(0xFF263238)
+                    ) {
+                        viewModel.selectDestinationCandidate(candidate)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+        HorizontalDivider(color = Color(0xFF2A2A2A))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 4: 🚨 P0 Safety Collision Test Section
         Text(
             text = "🚨 P0 SAFETY: VEHICLE COLLISION PREEMPTION",
             color = VisionObstacleCritical,
@@ -153,11 +238,11 @@ fun SimulatorControlSheet(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Static Obstacle Detection Scenarios
+        // SECTION 5: STATIC OBSTACLES & NAVIGATION ACTIONS
         Text(
-            text = "STATIC OBSTACLE DETECTION",
+            text = "NAVIGATION & OBSTACLE ACTIONS",
             color = VisionAmberPrimary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -170,17 +255,20 @@ fun SimulatorControlSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            SimButton(text = "Pole (Center • Critical)", color = VisionObstacleCritical) {
+            SimButton(text = "Start Walking") {
+                viewModel.startNavigation()
+            }
+            SimButton(text = "Next Maneuver") {
+                viewModel.stepToNextManeuver()
+            }
+            SimButton(text = "Arrived at Destination") {
+                viewModel.simulateArrival()
+            }
+            SimButton(text = "Obstacle Center", color = VisionObstacleCritical) {
                 viewModel.injectObstacle(SpatialZone.CENTER, ProximityLevel.CRITICAL, "Utility Pole")
             }
-            SimButton(text = "Barrier (Left • Near)", color = VisionObstacleNear) {
-                viewModel.injectObstacle(SpatialZone.LEFT, ProximityLevel.NEAR, "Construction Barrier")
-            }
-            SimButton(text = "Person (Right • Near)", color = VisionObstacleNear) {
-                viewModel.injectObstacle(SpatialZone.RIGHT, ProximityLevel.NEAR, "Pedestrian")
-            }
-            SimButton(text = "Clear All Obstacles", color = Color(0xFF2A2A2A)) {
-                viewModel.clearObstacles()
+            SimButton(text = "Reset All", color = Color(0xFF444444)) {
+                viewModel.resetToIdle()
             }
         }
     }
@@ -190,6 +278,7 @@ fun SimulatorControlSheet(
 private fun SimButton(
     text: String,
     color: Color = VisionSurfaceCard,
+    textColor: Color = VisionTextHighContrast,
     onClick: () -> Unit
 ) {
     Box(
@@ -202,10 +291,9 @@ private fun SimButton(
     ) {
         Text(
             text = text,
-            color = VisionTextHighContrast,
+            color = textColor,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
     }
 }
-

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -28,9 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.visionnav.location.LocationConfidence
 import com.visionnav.ui.state.SystemTelemetry
 import com.visionnav.ui.theme.VisionAmberPrimary
 import com.visionnav.ui.theme.VisionCyanVoice
+import com.visionnav.ui.theme.VisionObstacleCritical
 import com.visionnav.ui.theme.VisionSurfaceCard
 import com.visionnav.ui.theme.VisionTextHighContrast
 import com.visionnav.ui.theme.VisionTextMediumContrast
@@ -46,18 +48,55 @@ fun DevTelemetryBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Telemetry Chips
+        // Telemetry Chips (GPS, Heading, Mode)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            TelemetryChip(label = "FPS", value = "${telemetry.fps.toInt()}")
-            TelemetryChip(label = "LATENCY", value = "${telemetry.inferenceLatencyMs}ms")
-            TelemetryChip(label = "GPS", value = "±${telemetry.gpsAccuracyMeters}m")
+            // Mode Chip (LIVE vs SIMULATED)
+            val modeColor = if (telemetry.isSimulatorMode) VisionCyanVoice else VisionAmberPrimary
+            TelemetryChip(
+                label = "MODE",
+                value = if (telemetry.isSimulatorMode) "SIM" else "LIVE",
+                valueColor = modeColor
+            )
+
+            // GPS Accuracy Chip
+            val gpsValue = when {
+                !telemetry.isGpsAvailable -> "NO FIX"
+                telemetry.isOutlier -> "JUMP!"
+                telemetry.gpsAccuracyMeters != null -> "±${telemetry.gpsAccuracyMeters.toInt()}m"
+                else -> "--"
+            }
+            val gpsColor = when {
+                telemetry.isOutlier -> VisionObstacleCritical
+                telemetry.locationConfidence == LocationConfidence.HIGH -> Color(0xFF4CAF50)
+                telemetry.locationConfidence == LocationConfidence.MODERATE -> VisionAmberPrimary
+                else -> Color(0xFFE57373)
+            }
+            TelemetryChip(label = "GPS", value = gpsValue, valueColor = gpsColor)
+
+            // Heading Chip (degrees + cardinal)
+            val headingVal = if (telemetry.headingDegrees != null) {
+                val deg = telemetry.headingDegrees.toInt()
+                val cardinal = getCardinalDirection(deg)
+                "$deg° $cardinal"
+            } else {
+                "--"
+            }
+            TelemetryChip(label = "DIR", value = headingVal)
+
+            // Lat/Lng coordinate chip if available
+            if (telemetry.latitude != null && telemetry.longitude != null) {
+                TelemetryChip(
+                    label = "POS",
+                    value = "${String.format("%.2f", telemetry.latitude)},${String.format("%.2f", telemetry.longitude)}"
+                )
+            }
         }
 
         // Action Buttons: HUD Toggle & Simulator Trigger
@@ -104,17 +143,33 @@ fun DevTelemetryBar(
     }
 }
 
+private fun getCardinalDirection(degrees: Int): String {
+    val norm = (degrees % 360 + 360) % 360
+    return when (norm) {
+        in 338..360, in 0..22 -> "N"
+        in 23..67 -> "NE"
+        in 68..112 -> "E"
+        in 113..157 -> "SE"
+        in 158..202 -> "S"
+        in 203..247 -> "SW"
+        in 248..292 -> "W"
+        in 293..337 -> "NW"
+        else -> "N"
+    }
+}
+
 @Composable
 private fun TelemetryChip(
     label: String,
-    value: String
+    value: String,
+    valueColor: Color = VisionTextHighContrast
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF1E1E1E))
             .border(1.dp, Color(0xFF333333), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 7.dp, vertical = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -125,11 +180,10 @@ private fun TelemetryChip(
             )
             Text(
                 text = value,
-                color = VisionTextHighContrast,
+                color = valueColor,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Black
             )
         }
     }
 }
-

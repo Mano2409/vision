@@ -112,7 +112,7 @@
     <div class="space-y-3">
       <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-        <span>MVP Phase 1, UI, & Phase 2 (Voice + P0 Safety) Complete</span>
+        <span>MVP Phases 1, 2, & 3 (UI, P0 Safety Audio, GPS/Heading/Geocoding) Complete</span>
       </div>
       <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
         VisionNav MVP Tracker
@@ -128,14 +128,14 @@
       <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
         <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
           <span>TOTAL MVP COMPLETION</span>
-          <span class="text-emerald-400">3 / 10 PHASES</span>
+          <span class="text-emerald-400">4 / 10 PHASES</span>
         </div>
         <div class="flex items-baseline space-x-2">
-          <span class="text-3xl font-black tracking-tight text-white" id="overallPercentText">30%</span>
+          <span class="text-3xl font-black tracking-tight text-white" id="overallPercentText">40%</span>
           <span class="text-xs text-zinc-500 font-mono">MVP v1.0</span>
         </div>
         <div class="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-          <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500" style="width: 30%"></div>
+          <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500" style="width: 40%"></div>
         </div>
       </div>
 
@@ -362,21 +362,30 @@
         phaseNumber: 3,
         title: "Location Tracking & OSM Geocoding",
         domain: "Location & Geocoding",
-        status: "upcoming",
-        progress: 0,
-        summary: "Android FusedLocationProviderClient GPS positioning, accuracy filter, heading calculations, and OpenStreetMap geocoding.",
+        status: "completed",
+        progress: 100,
+        summary: "Android FusedLocationProviderClient GPS positioning with confidence classification & outlier jump detection, HeadingTracker with 359°/0° circular smoothing, and Photon+Nominatim geocoder with TTL caching and ambiguous candidate disambiguation.",
         prdRequirements: ["FR-02", "FR-03"],
         deliverables: [
-          "GPS position provider with accuracy filtering (<15m threshold)",
-          "Heading/azimuth calculation via compass/accelerometer sensors",
-          "OSM Nominatim/Photon geocoding client with local caching"
+          "Google Play Services FusedLocationProviderClient with adaptive 1-2s interval & outlier jump detection",
+          "SensorManager HeadingTracker (Rotation Vector + Accelerometer/Mag fallback) with 359°/0° circular smoothing",
+          "Photon primary + Nominatim fallback geocoder respecting 1-req/sec policy, with TTL caching and voice disambiguation",
+          "Offline Simulator mode with waypoint walking steps, heading rotation, and simulated test destinations"
         ],
         files: [
           "app/src/main/java/com/visionnav/location/LocationProvider.kt",
           "app/src/main/java/com/visionnav/location/HeadingTracker.kt",
-          "app/src/main/java/com/visionnav/routing/GeocodingClient.kt"
+          "app/src/main/java/com/visionnav/location/NavLocation.kt",
+          "app/src/main/java/com/visionnav/routing/GeocodingClient.kt",
+          "app/src/main/java/com/visionnav/routing/PhotonGeocoder.kt",
+          "app/src/main/java/com/visionnav/routing/NominatimGeocoder.kt",
+          "app/src/main/java/com/visionnav/routing/CompositeGeocodingClient.kt",
+          "app/src/main/java/com/visionnav/routing/MockGeocodingClient.kt",
+          "app/src/main/java/com/visionnav/network/NetworkClient.kt",
+          "app/src/main/java/com/visionnav/simulator/SimulatorLocationProvider.kt",
+          "app/src/main/java/com/visionnav/simulator/SimulatorHeadingProvider.kt"
         ],
-        acceptanceTest: "Destination place name converts to latitude/longitude. Location accuracy exposed to decision engine."
+        acceptanceTest: "Destination place name converts to latitude/longitude. Location accuracy exposed to decision engine. Heading smoothly wraps 359° to 0°."
       },
       {
         id: "phase-4",
@@ -528,14 +537,15 @@
     const SUBSYSTEMS_DATA = [
       { name: "app/src/main/java/com/visionnav/ui", label: "UI & Accessibility", status: "Built", icon: "🎨", desc: "Jetpack Compose Dual-Layer interface, OLED high-contrast theme, Fitts' law touch surface, and tester HUD." },
       { name: "app/src/main/java/com/visionnav/audio", label: "Audio & Speech", status: "Built", icon: "🎙️", desc: "Native SpeechRecognizer STT, TextToSpeech, P0 priority audio preemption, emergency haptics, and voice parser." },
+      { name: "app/src/main/java/com/visionnav/location", label: "Location & Sensors", status: "Built", icon: "📍", desc: "FusedLocationProviderClient GPS tracking, accuracy confidence filter, and circular smoothed heading tracker." },
+      { name: "app/src/main/java/com/visionnav/routing", label: "Routing & Geocoding", status: "Built", icon: "🗺️", desc: "Photon primary + OSM Nominatim fallback geocoder with TTL cache, disambiguation, and offline mock." },
       { name: "app/src/main/java/com/visionnav/camera", label: "Camera Pipeline", status: "Scaffolded", icon: "📷", desc: "CameraX lifecycle provider, image buffer extraction, and thermal-aware frame rate throttling." },
       { name: "app/src/main/java/com/visionnav/vision", label: "Vision & ML", status: "Scaffolded", icon: "👁️", desc: "YOLO26n LiteRT detector abstraction, Left/Center/Right zone classifier, and proximity estimator." },
-      { name: "app/src/main/java/com/visionnav/routing", label: "Routing & Geocoding", status: "Scaffolded", icon: "🗺️", desc: "Valhalla pedestrian costing client, OSM Nominatim geocoder, and route geometry decoder." },
-      { name: "app/src/main/java/com/visionnav/location", label: "Location & Sensors", status: "Scaffolded", icon: "📍", desc: "FusedLocationProviderClient GPS tracking, accuracy monitoring, and compass heading tracker." },
       { name: "app/src/main/java/com/visionnav/core", label: "Decision Engine", status: "Scaffolded", icon: "🧠", desc: "Sensor fusion core, route-vs-obstacle conflict resolver, and anti-spam alert deduplication." }
     ];
 
     const CHANGELOG_DATA = [
+      { date: "Sept 19, 2026", hash: "phase-3", title: "Implement Phase 3: Location Tracking & OSM Geocoding", detail: "Built FusedLocationProviderClient with accuracy confidence & outlier jump detection, HeadingTracker with 359°/0° circular smoothing, Photon+Nominatim geocoder with TTL cache & voice disambiguation, and offline simulator mode." },
       { date: "Sept 19, 2026", hash: "phase-2", title: "Implement Phase 2: Voice Interface & P0 Safety Audio Preemption", detail: "Built AudioQueueManager, HapticManager (<50ms shock), VoiceSpeaker, VoiceRecognizer, VoiceCommandParser, and codified Section 18.1 safety rule." },
       { date: "Sept 19, 2026", hash: "aa77ddd", title: "Add Gradle wrapper scripts (gradlew, gradlew.bat)", detail: "Added official Gradle 8.6 wrapper scripts for cross-platform build execution." },
       { date: "Sept 19, 2026", hash: "a09ef1b", title: "Initialize native Android project & Dual-Layer Jetpack Compose UI", detail: "Scaffolded Kotlin DSL build configs, libs.versions.toml, 7 architecture packages, and implemented Option A Compose UI with state simulator." },

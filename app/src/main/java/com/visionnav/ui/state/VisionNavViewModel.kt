@@ -11,7 +11,19 @@ import com.visionnav.audio.VoiceCommand
 import com.visionnav.audio.VoiceCommandParser
 import com.visionnav.audio.VoiceRecognizer
 import com.visionnav.audio.VoiceSpeaker
-import kotlinx.coroutines.delay
+import com.visionnav.location.HeadingTracker
+import com.visionnav.location.IHeadingProvider
+import com.visionnav.location.ILocationProvider
+import com.visionnav.location.LocationProvider
+import com.visionnav.location.NavLocation
+import com.visionnav.routing.CompositeGeocodingClient
+import com.visionnav.routing.GeocodingException
+import com.visionnav.routing.GeocodingResult
+import com.visionnav.routing.IGeocodingClient
+import com.visionnav.routing.MockGeocodingClient
+import com.visionnav.simulator.SimulatorHeadingProvider
+import com.visionnav.simulator.SimulatorLocationProvider
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +35,24 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
     private val hapticManager = HapticManager(application)
     private val voiceSpeaker = VoiceSpeaker(application)
     private val audioQueue = AudioQueueManager(voiceSpeaker, hapticManager, viewModelScope)
+
+    // Hardware Providers (Live Mode)
+    private val liveLocationProvider = LocationProvider(application)
+    private val liveHeadingTracker = HeadingTracker(application)
+
+    // Simulated Providers (Offline/Dev Mode)
+    private val simulatorLocationProvider = SimulatorLocationProvider()
+    private val simulatorHeadingProvider = SimulatorHeadingProvider()
+
+    // Geocoding Clients
+    private val compositeGeocodingClient: IGeocodingClient = CompositeGeocodingClient()
+    private val mockGeocodingClient: IGeocodingClient = MockGeocodingClient()
+
+    private var activeLocationProvider: ILocationProvider = liveLocationProvider
+    private var activeHeadingProvider: IHeadingProvider = liveHeadingTracker
+
+    private var locationObservationJob: Job? = null
+    private var headingObservationJob: Job? = null
 
     private val voiceRecognizer = VoiceRecognizer(
         context = application,
@@ -67,7 +97,125 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
         }
+
+        // Start observing location and heading streams
+        bindLocationAndHeadingProviders()
     }
+
+    /**
+     * Connects observers to either live hardware or simulated provider flows.
+     */
+    private fun bindLocationAndHeadingProviders() {
+        locationObservationJob?.cancel()
+        headingObservationJob?.cancel()
+
+        activeLocationProvider.start()
+        activeHeadingProvider.start()
+
+        locationObservationJob = viewModelScope.launch {
+            activeLocationProvider.locationFlow.collect { loc ->
+                _uiState.update { current ->
+                    current.copy(
+                        currentLocation = loc,
+                        telemetry = current.telemetry.copy(
+                            latitude = if (loc.isAvailable) loc.latitude else current.telemetry.latitude,
+                            longitude = if (loc.isAvailable) loc.longitude else current.telemetry.longitude,
+                            gpsAccuracyMeters = loc.accuracyMeters,
+                            locationConfidence = loc.confidence,
+                            isGpsAvailable = loc.isAvailable,
+                            isOutlier = loc.isOutlier,
+                            isSimulatorMode = current.isSimulatorMode
+                        )
+                    )
+                }
+            }
+        }
+
+        headingObservationJob = viewModelScope.launch {
+            activeHeadingProvider.headingFlow.collect { heading ->
+                _uiState.update { current ->
+                    current.copy(
+                        telemetry = current.telemetry.copy(
+                            headingDegrees = heading
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Toggles between Live Hardware sensors and Offline Simulator.
+     */
+    fun toggleSimulationMode() {
+        hapticManager.vibrateClick()
+        val newSimMode = !_uiState.value.isSimulatorMode
+
+        activeLocationProvider.stop()
+        activeHeadingProvider.stop()
+
+        if (newSimMode) {
+            activeLocationProvider = simulatorLocationProvider
+            activeHeadingProvider = simulatorHeadingProvider
+        } else {
+            activeLocationProvider = liveLocationProvider
+            activeHeadingProvider = liveHeadingTracker
+        }
+
+        _uiState.update {
+            it.copy(
+                isSimulatorMode = newSimMode,
+                telemetry = it.telemetry.copy(isSimulatorMode = newSimMode),
+                latestSpokenMessage = if (newSimMode) "Switched to Simulator Mode" else "Switched to Live GPS Mode"
+            )
+        }
+
+        bindLocationAndHeadingProviders()
+        speakWithPriority(
+            if (newSimMode) "Simulator Mode enabled." else "Live GPS Mode enabled.",
+            AudioPriority.SYSTEM_FEEDBACK
+        )
+    }
+
+    fun startLocationUpdates() {
+        activeLocationProvider.start()
+        activeHeadingProvider.start()
+    }
+
+    fun stopLocationUpdates() {
+        activeLocationProvider.stop()
+        activeHeadingProvider.stop()
+    }
+
+    // ==========================================
+    // SIMULATOR CONTROLS (PHASE 3)
+    // ==========================================
+
+    fun simulatorStepForward() {
+        hapticManager.vibrateClick()
+        simulatorLocationProvider.stepForward()
+    }
+
+    fun simulatorRotateHeading(deltaDegrees: Float) {
+        hapticManager.vibrateClick()
+        simulatorHeadingProvider.rotateBy(deltaDegrees)
+    }
+
+    fun simulatorInjectGpsOutlier() {
+        hapticManager.vibrateClick()
+        simulatorLocationProvider.injectOutlierJump()
+        speakWithPriority("GPS outlier jump injected.", AudioPriority.SYSTEM_FEEDBACK)
+    }
+
+    fun simulatorSetLowAccuracy() {
+        hapticManager.vibrateClick()
+        simulatorLocationProvider.setLowAccuracy()
+        speakWithPriority("Low GPS accuracy injected.", AudioPriority.SYSTEM_FEEDBACK)
+    }
+
+    // ==========================================
+    // VOICE & NAVIGATION INTERACTIONS
+    // ==========================================
 
     fun onVoiceSurfaceClicked() {
         hapticManager.vibrateClick()
@@ -114,7 +262,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update {
             it.copy(
                 voiceState = VoiceState.LISTENING,
-                latestSpokenMessage = "Listening... Speak your destination or command."
+                latestSpokenMessage = "Listening... Speak destination, e.g., 'Navigate to Chennai Central'"
             )
         }
         voiceRecognizer.startListening()
@@ -140,11 +288,17 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 onManeuverCardClicked()
             }
             is VoiceCommand.WhereAmI -> {
+                val loc = _uiState.value.currentLocation
                 val currentManeuver = _uiState.value.currentManeuver
-                val msg = if (currentManeuver != null) {
-                    "Currently navigating to ${_uiState.value.destinationName}. Next step: ${currentManeuver.primaryText}."
-                } else {
-                    "VisionNav is ready. No active route. Tap to speak a destination."
+                val msg = when {
+                    loc.isAvailable -> {
+                        val heading = _uiState.value.telemetry.headingDegrees?.toInt() ?: 0
+                        "Current coordinates: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}. Facing $heading degrees. GPS accuracy: ±${loc.accuracyMeters?.toInt() ?: 0} meters."
+                    }
+                    currentManeuver != null -> {
+                        "Currently navigating to ${_uiState.value.destinationName}. Next step: ${currentManeuver.primaryText}."
+                    }
+                    else -> "VisionNav is ready. GPS active. Tap to speak a destination."
                 }
                 speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
             }
@@ -163,49 +317,135 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun processSpokenDestination(destination: String) {
+    /**
+     * Phase 3 Geocoding Flow:
+     * Spoken destination string -> GeocodingClient -> Candidates -> Confirmation
+     */
+    fun processSpokenDestination(destinationQuery: String) {
         viewModelScope.launch {
-            val searchMsg = "Searching walking route to $destination..."
+            val searchMsg = "Searching location for \"$destinationQuery\"..."
             _uiState.update {
                 it.copy(
                     voiceState = VoiceState.PROCESSING,
                     navigationStatus = NavigationStatus.SEARCHING,
-                    destinationName = destination,
+                    destinationName = destinationQuery,
+                    telemetry = it.telemetry.copy(geocodingStatus = "SEARCHING"),
                     latestSpokenMessage = searchMsg
                 )
             }
             audioQueue.post(AudioMessage(text = searchMsg, priority = AudioPriority.SYSTEM_FEEDBACK))
 
-            delay(1400) // Simulate Valhalla route fetching
+            try {
+                val client = if (_uiState.value.isSimulatorMode) mockGeocodingClient else compositeGeocodingClient
+                val results = client.search(destinationQuery)
 
-            val routeFoundMsg = "Route found to $destination. Total distance 450 meters. Tap to start navigation."
-            _uiState.update {
-                it.copy(
-                    voiceState = VoiceState.SPEAKING,
-                    navigationStatus = NavigationStatus.ROUTE_READY,
-                    currentManeuver = ManeuverInstruction(
-                        id = "m1",
-                        direction = TurnDirection.STRAIGHT,
-                        primaryText = "Walk straight along Pine Street",
-                        secondaryText = "Follow path for 120 meters",
-                        distanceMeters = 120
-                    ),
-                    nextManeuver = ManeuverInstruction(
-                        id = "m2",
-                        direction = TurnDirection.LEFT,
-                        primaryText = "Turn left onto Oak Avenue",
-                        secondaryText = "Pedestrian crossing ahead",
-                        distanceMeters = 120
-                    ),
-                    latestSpokenMessage = routeFoundMsg
+                when {
+                    results.isEmpty() -> {
+                        handleGeocodingNoResults(destinationQuery)
+                    }
+                    results.size == 1 -> {
+                        // Single unambiguous result found -> Confirm directly
+                        selectDestinationCandidate(results.first())
+                    }
+                    else -> {
+                        // Multiple results found -> Prompt for confirmation / disambiguation
+                        handleAmbiguousDestinations(destinationQuery, results)
+                    }
+                }
+            } catch (e: GeocodingException) {
+                handleGeocodingError(destinationQuery, e)
+            } catch (e: Exception) {
+                handleGeocodingError(
+                    destinationQuery,
+                    GeocodingException(com.visionnav.routing.GeocodingErrorType.SERVER_ERROR, e.message ?: "Unknown error")
                 )
             }
-            audioQueue.post(AudioMessage(text = routeFoundMsg, priority = AudioPriority.ROUTINE_NAVIGATION))
         }
     }
 
+    private fun handleAmbiguousDestinations(query: String, candidates: List<GeocodingResult>) {
+        val firstTwo = candidates.take(2)
+        val candidate1Name = firstTwo[0].displayName.substringBefore(",")
+        val candidate2Name = firstTwo[1].displayName.substringBefore(",")
+        val disambiguationMsg = "I found ${candidates.size} locations for $query. Did you mean $candidate1Name or $candidate2Name?"
+
+        _uiState.update {
+            it.copy(
+                voiceState = VoiceState.SPEAKING,
+                navigationStatus = NavigationStatus.AMBIGUOUS_DESTINATION,
+                ambiguousCandidates = candidates,
+                telemetry = it.telemetry.copy(geocodingStatus = "AMBIGUOUS"),
+                latestSpokenMessage = disambiguationMsg
+            )
+        }
+
+        audioQueue.post(AudioMessage(text = disambiguationMsg, priority = AudioPriority.ROUTINE_NAVIGATION))
+    }
+
+    private fun handleGeocodingNoResults(query: String) {
+        val noResultsMsg = "No location found for \"$query\". Please try another place name."
+        _uiState.update {
+            it.copy(
+                voiceState = VoiceState.SPEAKING,
+                navigationStatus = NavigationStatus.IDLE,
+                telemetry = it.telemetry.copy(geocodingStatus = "NO_RESULTS"),
+                latestSpokenMessage = noResultsMsg
+            )
+        }
+        audioQueue.post(AudioMessage(text = noResultsMsg, priority = AudioPriority.SYSTEM_FEEDBACK))
+    }
+
+    private fun handleGeocodingError(query: String, error: GeocodingException) {
+        val errorMsg = when (error.errorType) {
+            com.visionnav.routing.GeocodingErrorType.NETWORK_ERROR ->
+                "Network error while searching destination. Check internet or switch to simulator mode."
+            com.visionnav.routing.GeocodingErrorType.RATE_LIMITED ->
+                "Search service is temporarily busy. Please wait a moment."
+            else -> "Could not find destination \"$query\". Please try again."
+        }
+
+        _uiState.update {
+            it.copy(
+                voiceState = VoiceState.SPEAKING,
+                navigationStatus = NavigationStatus.IDLE,
+                telemetry = it.telemetry.copy(geocodingStatus = "ERROR"),
+                latestSpokenMessage = errorMsg
+            )
+        }
+        audioQueue.post(AudioMessage(text = errorMsg, priority = AudioPriority.SYSTEM_FEEDBACK))
+    }
+
+    /**
+     * Confirms the selected geocoding candidate destination and prepares for Phase 4 Valhalla routing.
+     */
+    fun selectDestinationCandidate(candidate: GeocodingResult) {
+        val title = candidate.displayName.substringBefore(",")
+        val confirmationMsg = "Destination confirmed: $title. Coordinates: ${String.format("%.4f", candidate.latitude)}, ${String.format("%.4f", candidate.longitude)}. Ready for route calculation."
+
+        _uiState.update {
+            it.copy(
+                voiceState = VoiceState.SPEAKING,
+                navigationStatus = NavigationStatus.DESTINATION_CONFIRMED,
+                destinationName = title,
+                confirmedDestination = candidate,
+                ambiguousCandidates = emptyList(),
+                telemetry = it.telemetry.copy(geocodingStatus = "RESOLVED"),
+                currentManeuver = ManeuverInstruction(
+                    id = "m1",
+                    direction = TurnDirection.STRAIGHT,
+                    primaryText = "Walk straight towards $title",
+                    secondaryText = "${candidate.addressSnippet ?: "Destination path"} (Ready for Phase 4 Valhalla)",
+                    distanceMeters = 350
+                ),
+                latestSpokenMessage = confirmationMsg
+            )
+        }
+
+        audioQueue.post(AudioMessage(text = confirmationMsg, priority = AudioPriority.ROUTINE_NAVIGATION))
+    }
+
     fun startNavigation() {
-        val startMsg = "Starting walking navigation. Head straight for 120 meters."
+        val startMsg = "Starting walking navigation. Head straight along Pine Street."
         _uiState.update {
             it.copy(
                 navigationStatus = NavigationStatus.NAVIGATING,
@@ -228,7 +468,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
             id = "threat_${System.currentTimeMillis()}",
             label = vehicleType,
             confidence = 0.96f,
-            boundingBox = NormalizedBoundingBox(0.30f, 0.15f, 0.70f, 0.90f), // Large expanding bbox
+            boundingBox = NormalizedBoundingBox(0.30f, 0.15f, 0.70f, 0.90f),
             zone = SpatialZone.CENTER,
             proximity = ProximityLevel.CRITICAL,
             isBlockingPath = true
@@ -242,7 +482,6 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
             )
         }
 
-        // Send to AudioQueueManager: triggers immediate haptic shock, kills TTS, and speaks STOP
         audioQueue.post(
             AudioMessage(
                 text = alertText,
@@ -328,13 +567,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
             _uiState.update {
                 it.copy(
                     currentManeuver = next,
-                    nextManeuver = ManeuverInstruction(
-                        id = "m3",
-                        direction = TurnDirection.DESTINATION,
-                        primaryText = "Destination on your right",
-                        secondaryText = "Arriving at ${it.destinationName ?: "destination"}",
-                        distanceMeters = 80
-                    ),
+                    nextManeuver = null,
                     latestSpokenMessage = maneuverText
                 )
             }
@@ -345,7 +578,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun simulateArrival() {
-        val arrivalMsg = "You have arrived at your destination."
+        val arrivalMsg = "You have arrived at ${_uiState.value.destinationName ?: "your destination"}."
         _uiState.update {
             it.copy(
                 navigationStatus = NavigationStatus.ARRIVED,
@@ -365,7 +598,9 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update {
             NavUiState(
                 isDevHudVisible = it.isDevHudVisible,
-                isSimulatorDrawerOpen = it.isSimulatorDrawerOpen
+                isSimulatorDrawerOpen = it.isSimulatorDrawerOpen,
+                isSimulatorMode = it.isSimulatorMode,
+                telemetry = it.telemetry.copy(geocodingStatus = "READY")
             )
         }
     }
@@ -382,6 +617,10 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
 
     override fun onCleared() {
         super.onCleared()
+        locationObservationJob?.cancel()
+        headingObservationJob?.cancel()
+        activeLocationProvider.stop()
+        activeHeadingProvider.stop()
         audioQueue.stopAll()
         voiceSpeaker.shutdown()
         voiceRecognizer.destroy()

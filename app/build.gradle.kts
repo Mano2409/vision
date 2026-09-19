@@ -56,6 +56,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -81,6 +85,9 @@ dependencies {
 
     // Location (Ready for Phase 3)
     implementation(libs.play.services.location)
+
+    // Networking (Phase 3 & Phase 4: Geocoding & Valhalla)
+    implementation(libs.okhttp)
 
     // Debugging & Tooling
     debugImplementation(libs.androidx.ui.tooling)

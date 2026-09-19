@@ -18,13 +18,21 @@ class MainActivity : ComponentActivity() {
 
     private var viewModelRef: VisionNavViewModel? = null
 
-    private val requestAudioPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModelRef?.startListening()
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val audioGranted = permissions[Manifest.permission.RECORD_AUDIO] ?: false
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        if (fineLocationGranted || coarseLocationGranted) {
+            viewModelRef?.startLocationUpdates()
         } else {
-            Toast.makeText(this, "Microphone permission is required for voice navigation", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Location permission is required for live GPS navigation. Simulator mode is active.", Toast.LENGTH_LONG).show()
+        }
+
+        if (audioGranted) {
+            viewModelRef?.startListening()
         }
     }
 
@@ -37,25 +45,51 @@ class MainActivity : ComponentActivity() {
                 val viewModel: VisionNavViewModel = viewModel()
                 viewModelRef = viewModel
 
-                // Request microphone permission when user triggers voice input
                 MainNavScreen(
                     viewModel = viewModel,
                     onRequestAudioPermission = {
-                        checkAndRequestMicrophonePermission {
+                        checkAndRequestPermissions {
                             viewModel.startListening()
                         }
                     }
                 )
             }
         }
+
+        // Check and request core location & voice permissions
+        checkAndRequestPermissions {
+            viewModelRef?.startLocationUpdates()
+        }
     }
 
-    private fun checkAndRequestMicrophonePermission(onGranted: () -> Unit) {
-        val permission = Manifest.permission.RECORD_AUDIO
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+    override fun onStart() {
+        super.onStart()
+        viewModelRef?.startLocationUpdates()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModelRef?.stopLocationUpdates()
+    }
+
+    private fun checkAndRequestPermissions(onGranted: () -> Unit) {
+        val fineLocation = Manifest.permission.ACCESS_FINE_LOCATION
+        val coarseLocation = Manifest.permission.ACCESS_COARSE_LOCATION
+        val recordAudio = Manifest.permission.RECORD_AUDIO
+
+        val fineGranted = ContextCompat.checkSelfPermission(this, fineLocation) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ContextCompat.checkSelfPermission(this, coarseLocation) == PackageManager.PERMISSION_GRANTED
+        val audioGranted = ContextCompat.checkSelfPermission(this, recordAudio) == PackageManager.PERMISSION_GRANTED
+
+        val permissionsToRequest = mutableListOf<String>()
+        if (!fineGranted) permissionsToRequest.add(fineLocation)
+        if (!coarseGranted) permissionsToRequest.add(coarseLocation)
+        if (!audioGranted) permissionsToRequest.add(recordAudio)
+
+        if (permissionsToRequest.isEmpty()) {
             onGranted()
         } else {
-            requestAudioPermissionLauncher.launch(permission)
+            requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
 }

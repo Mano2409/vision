@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionNav MVP // Development Progress & Roadmap</title>
+  
+  <!-- Fonts: Geist & Geist Mono (Vercel Design Standard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          },
+          colors: {
+            brand: {
+              black: '#000000',
+              card: '#0a0a0a',
+              cardHover: '#121212',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderHover: 'rgba(255, 255, 255, 0.18)',
+              amber: '#ffd600',
+              cyan: '#00e5ff',
+              red: '#ff3b30',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #000000;
+      color: #ededed;
+      font-family: 'Geist', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .geist-mono {
+      font-family: 'Geist Mono', monospace;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    .badge-pulse::before {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: currentColor;
+      animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.6); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-white selection:text-black">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-white/[0.08] sticky top-0 z-50 backdrop-blur-xl bg-black/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <!-- Minimal Logo Mark -->
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-xs tracking-tighter">
+          VN
+        </div>
+        <div class="flex items-center space-x-2 text-sm">
+          <span class="text-zinc-400 font-medium">visionary</span>
+          <span class="text-zinc-600">/</span>
+          <span class="text-white font-semibold tracking-tight">progress</span>
+        </div>
+        <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono bg-zinc-900 text-zinc-400 border border-white/[0.08]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5 animate-pulse"></span>
+          branch: feature/ui-scaffold
+        </span>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <span class="text-xs text-zinc-500 font-mono hidden sm:inline">Updated: <span id="lastUpdatedDate">Sept 19, 2026</span></span>
+        <a href="VisionNav_MVP_PRD.md" target="_blank" class="px-3 py-1.5 text-xs font-medium rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/[0.08] transition-colors flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>PRD Document</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+    <!-- Hero Title & Value Proposition -->
+    <div class="space-y-3">
+      <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span>MVP Phase 1 & Dual-Layer UI Complete</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        VisionNav MVP Tracker
+      </h1>
+      <p class="text-zinc-400 text-base sm:text-lg max-w-3xl leading-relaxed">
+        Live progress tracking for the software-only Android assistive prototype fusing OpenStreetMap/Valhalla pedestrian navigation with on-device YOLO26n spatial obstacle detection.
+      </p>
+    </div>
+
+    <!-- Executive Metric Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Card 1: Overall Progress -->
+      <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
+        <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <span>TOTAL MVP COMPLETION</span>
+          <span class="text-emerald-400">2 / 10 PHASES</span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-3xl font-black tracking-tight text-white" id="overallPercentText">20%</span>
+          <span class="text-xs text-zinc-500 font-mono">MVP v1.0</span>
+        </div>
+        <div class="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+          <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500" style="width: 20%"></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Subsystems Scaffolded -->
+      <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
+        <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <span>MODULAR ARCHITECTURE</span>
+          <span class="text-emerald-400">SCAFFOLDED</span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-3xl font-black tracking-tight text-white">7 / 7</span>
+          <span class="text-xs text-zinc-500 font-mono">subsystems</span>
+        </div>
+        <div class="text-xs text-zinc-400 truncate font-mono">
+          camera, vision, nav, route, audio...
+        </div>
+      </div>
+
+      <!-- Card 3: Target Platform & Stack -->
+      <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
+        <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <span>PLATFORM & TOOLCHAIN</span>
+          <span class="text-cyan-400">READY</span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-2xl font-black tracking-tight text-white truncate">Android Native</span>
+        </div>
+        <div class="text-xs text-zinc-400 font-mono">
+          Kotlin • Jetpack Compose • API 26-34
+        </div>
+      </div>
+
+      <!-- Card 4: Audit & Security Status -->
+      <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
+        <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <span>CODE HEALTH & AUDIT</span>
+          <span class="text-emerald-400 font-mono">PASSED</span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-3xl font-black tracking-tight text-white">0</span>
+          <span class="text-xs text-zinc-500 font-mono">vulnerabilities</span>
+        </div>
+        <div class="text-xs text-emerald-400 font-mono flex items-center space-x-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span>Mobile audit & WCAG AAA OK</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10-Phase Pipeline Bar -->
+    <div class="space-y-3 p-5 rounded-xl bg-zinc-950/60 border border-white/[0.08]">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono text-zinc-400 tracking-wider uppercase">10-Phase MVP Roadmap Pipeline</span>
+        <span class="text-xs font-mono text-zinc-500">Click any phase below to inspect</span>
+      </div>
+      <div class="grid grid-cols-10 gap-1.5 h-3 rounded-lg overflow-hidden" id="pipelineBar">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="flex justify-between text-[11px] font-mono text-zinc-500 pt-1">
+        <span>Phase 1: Foundation</span>
+        <span>Phase 5: CameraX</span>
+        <span>Phase 10: Release</span>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
+      <!-- Status Tabs -->
+      <div class="flex items-center space-x-1 p-1 rounded-lg bg-zinc-900 border border-white/[0.08] overflow-x-auto text-xs font-medium">
+        <button onclick="filterStatus('all')" id="tab-all" class="tab-btn px-3 py-1.5 rounded-md bg-white text-black font-semibold transition-all">All (10)</button>
+        <button onclick="filterStatus('completed')" id="tab-completed" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Completed (2)</button>
+        <button onclick="filterStatus('in-progress')" id="tab-in-progress" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">In Progress (0)</button>
+        <button onclick="filterStatus('upcoming')" id="tab-upcoming" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Upcoming (8)</button>
+      </div>
+
+      <!-- Search Box -->
+      <div class="relative max-w-xs w-full">
+        <svg class="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Filter features, files, PRD IDs..." 
+          oninput="handleSearch()"
+          class="w-full bg-zinc-900 border border-white/[0.08] rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/25 transition-colors font-mono"
+        >
+      </div>
+    </div>
+
+    <!-- Roadmap Milestone Cards -->
+    <div class="space-y-4" id="milestoneCardsContainer">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Subsystems Architecture Matrix -->
+    <div class="pt-6 space-y-4">
+      <div class="border-b border-white/[0.08] pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white tracking-tight">PRD Section 21 Architecture Packages</h2>
+          <p class="text-xs text-zinc-400">Modular subsystem layout established in <code class="text-zinc-300 font-mono">app/src/main/java/com/visionnav/</code></p>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">7 Active Packages</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="subsystemGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Recent Activity & Commit Log -->
+    <div class="pt-6 space-y-4">
+      <div class="border-b border-white/[0.08] pb-3">
+        <h2 class="text-lg font-bold text-white tracking-tight">Recent Changelog & Engineering Activity</h2>
+        <p class="text-xs text-zinc-400">Automated audit trail from git commits on <code class="text-zinc-300 font-mono">feature/ui-scaffold</code></p>
+      </div>
+
+      <div class="rounded-xl bg-zinc-950 border border-white/[0.08] divide-y divide-white/[0.06]" id="changelogList">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.08] mt-16 py-8 text-center text-xs text-zinc-500 font-mono">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>VisionNav MVP • Assistive Walking Navigation Prototype</div>
+      <div>Designed with Vercel Minimalist Principles • Dark OLED Standard</div>
+    </div>
+  </footer>
+
+  <!-- Embedded Reactive Data & Logic -->
+  <script>
+    const ROADMAP_DATA = [
+      {
+        id: "phase-1",
+        phaseNumber: 1,
+        title: "Project Foundation & Build System",
+        domain: "Foundation",
+        status: "completed",
+        progress: 100,
+        summary: "Android Studio Gradle Kotlin DSL setup, API 26-34 compatibility, Version Catalog, permissions manifest, and Git branch structure.",
+        prdRequirements: ["FR-05", "Section 6.1", "Section 21"],
+        deliverables: [
+          "Gradle Kotlin DSL build scripts (settings.gradle.kts, root & app build.gradle.kts)",
+          "Gradle Version Catalog (gradle/libs.versions.toml) targeting Jetpack Compose BOM 2024.05.00",
+          "Hardware permissions manifest (Camera, Audio/STT, Location Fine/Coarse, Internet)",
+          "Wrapper scripts (gradlew, gradlew.bat) for automated build execution",
+          "Dedicated git feature branch (feature/ui-scaffold)"
+        ],
+        files: [
+          "settings.gradle.kts",
+          "build.gradle.kts",
+          "gradle/libs.versions.toml",
+          "app/build.gradle.kts",
+          "app/src/main/AndroidManifest.xml",
+          "gradlew.bat",
+          "gradlew"
+        ],
+        acceptanceTest: "Project syncs cleanly and builds valid debug APK structure without dependency conflicts."
+      },
+      {
+        id: "phase-ui",
+        phaseNumber: 1.5,
+        title: "Dual-Layer Jetpack Compose UI & Simulator",
+        domain: "UI & Accessibility",
+        status: "completed",
+        progress: 100,
+        summary: "High-contrast OLED dark theme for low vision, Fitts' law tactile voice button, maneuver guidance card, and researcher CameraX HUD overlay with offline simulation drawer.",
+        prdRequirements: ["FR-07", "FR-08", "FR-09", "FR-10", "Section 10"],
+        deliverables: [
+          "OLED High-Contrast Palette (#000000, Cyber Amber #FFD600, Electric Cyan #00E5FF, Danger Red #FF3B30)",
+          "VoiceTouchSurface.kt (>160dp height with animated pulse for LISTENING and TalkBack semantics)",
+          "NavigationManeuverCard.kt (Pedestrian turn cues, distance display, tap-to-repeat action)",
+          "SpatialVisionOverlay.kt (Left 33% | Center 34% | Right 33% partition guidelines & bounding boxes)",
+          "DevTelemetryBar.kt (Real-time FPS, latency, GPS accuracy, and HUD toggle)",
+          "SimulatorControlSheet.kt (Offline drawer to test full lifecycle and inject obstacles without hardware sensors)"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/MainActivity.kt",
+          "app/src/main/java/com/visionnav/ui/theme/Color.kt",
+          "app/src/main/java/com/visionnav/ui/theme/Theme.kt",
+          "app/src/main/java/com/visionnav/ui/theme/Type.kt",
+          "app/src/main/java/com/visionnav/ui/state/NavUiState.kt",
+          "app/src/main/java/com/visionnav/ui/state/VisionNavViewModel.kt",
+          "app/src/main/java/com/visionnav/ui/components/VoiceTouchSurface.kt",
+          "app/src/main/java/com/visionnav/ui/components/NavigationManeuverCard.kt",
+          "app/src/main/java/com/visionnav/ui/components/SpatialVisionOverlay.kt",
+          "app/src/main/java/com/visionnav/ui/components/DevTelemetryBar.kt",
+          "app/src/main/java/com/visionnav/ui/components/SimulatorControlSheet.kt",
+          "app/src/main/java/com/visionnav/ui/screens/MainNavScreen.kt"
+        ],
+        acceptanceTest: "All PRD navigation states (Idle, Listening, Route Ready, Navigating, Obstacle Alert, Arrived) interactively testable in simulator."
+      },
+      {
+        id: "phase-2",
+        phaseNumber: 2,
+        title: "Voice Interface & Audio Priority Queue",
+        domain: "Audio & Speech",
+        status: "upcoming",
+        progress: 0,
+        summary: "Android native SpeechRecognizer (STT) and TextToSpeech (TTS) integration with voice state machine and obstacle preemption.",
+        prdRequirements: ["FR-01", "FR-09", "FR-10", "Section 10"],
+        deliverables: [
+          "SpeechRecognizer wrapper with continuous listening & timeout management",
+          "TextToSpeech manager with speech pitch/rate controls",
+          "Priority Audio Queue: Urgent obstacle collision alerts preempt standard turn instructions",
+          "Voice Command Parser ('Navigate to...', 'Stop navigation', 'Repeat', 'Where am I?', 'What's ahead?')"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/audio/VoiceRecognizer.kt",
+          "app/src/main/java/com/visionnav/audio/VoiceSpeaker.kt",
+          "app/src/main/java/com/visionnav/audio/AudioQueueManager.kt",
+          "app/src/main/java/com/visionnav/audio/VoiceCommandParser.kt"
+        ],
+        acceptanceTest: "User speaks destination; speech converts to text. Critical alerts interrupt speaking without speech collisions."
+      },
+      {
+        id: "phase-3",
+        phaseNumber: 3,
+        title: "Location Tracking & OSM Geocoding",
+        domain: "Location & Geocoding",
+        status: "upcoming",
+        progress: 0,
+        summary: "Android FusedLocationProviderClient GPS positioning, accuracy filter, heading calculations, and OpenStreetMap geocoding.",
+        prdRequirements: ["FR-02", "FR-03"],
+        deliverables: [
+          "GPS position provider with accuracy filtering (<15m threshold)",
+          "Heading/azimuth calculation via compass/accelerometer sensors",
+          "OSM Nominatim/Photon geocoding client with local caching"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/location/LocationProvider.kt",
+          "app/src/main/java/com/visionnav/location/HeadingTracker.kt",
+          "app/src/main/java/com/visionnav/routing/GeocodingClient.kt"
+        ],
+        acceptanceTest: "Destination place name converts to latitude/longitude. Location accuracy exposed to decision engine."
+      },
+      {
+        id: "phase-4",
+        phaseNumber: 4,
+        title: "Valhalla Pedestrian Routing Engine",
+        domain: "Routing",
+        status: "upcoming",
+        progress: 0,
+        summary: "Pedestrian route calculation via Valhalla API, step-by-step maneuver extraction, and dynamic off-route recalculation.",
+        prdRequirements: ["FR-04"],
+        deliverables: [
+          "Valhalla HTTP client with pedestrian costing profile",
+          "Route polyline geometry parser & step progress tracker",
+          "Off-route threshold detector (auto recalculation after 25m divergence)"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/routing/ValhallaClient.kt",
+          "app/src/main/java/com/visionnav/routing/RouteGeometryParser.kt",
+          "app/src/main/java/com/visionnav/navigation/ReroutingEngine.kt"
+        ],
+        acceptanceTest: "Valid pedestrian route returned from coordinates with sequential turn maneuvers."
+      },
+      {
+        id: "phase-5",
+        phaseNumber: 5,
+        title: "CameraX Pipeline & Frame Throttling",
+        domain: "Camera",
+        status: "upcoming",
+        progress: 0,
+        summary: "CameraX ImageAnalysis pipeline with controlled frame extraction to optimize battery and thermal performance.",
+        prdRequirements: ["FR-05"],
+        deliverables: [
+          "CameraX lifecycle provider & preview surface",
+          "ImageAnalysis.Analyzer with frame rate throttling (15-30 FPS)",
+          "Rotation and YUV-to-RGB image buffer normalization"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/camera/CameraManager.kt",
+          "app/src/main/java/com/visionnav/camera/FrameAnalyzer.kt"
+        ],
+        acceptanceTest: "Camera stream delivers stable RGB frames to ML buffer without memory leaks or UI jank."
+      },
+      {
+        id: "phase-6",
+        phaseNumber: 6,
+        title: "YOLO26n Local ML Inference (LiteRT)",
+        domain: "Computer Vision",
+        status: "upcoming",
+        progress: 0,
+        summary: "On-device object detection using LiteRT / TFLite runtime running completely offline with stable detector interface.",
+        prdRequirements: ["FR-06"],
+        deliverables: [
+          "LiteRT model loader for yolo26n.tflite (INT8/FP16)",
+          "ObjectDetector abstraction interface allowing seamless model swapping",
+          "Bounding box post-processing (NMS, confidence filtering)",
+          "Inference latency and effective FPS telemetry logger"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/vision/ObjectDetector.kt",
+          "app/src/main/java/com/visionnav/vision/YoloDetector.kt",
+          "app/src/main/assets/models/yolo26n.tflite"
+        ],
+        acceptanceTest: "YOLO26n runs locally on Android device with <50ms inference latency without internet connection."
+      },
+      {
+        id: "phase-7",
+        phaseNumber: 7,
+        title: "Spatial Partitioning & Coarse Proximity",
+        domain: "Spatial Perception",
+        status: "upcoming",
+        progress: 0,
+        summary: "Classify detected objects into Left/Center/Right zones, determine coarse proximity tiers, and apply lightweight tracking.",
+        prdRequirements: ["FR-07"],
+        deliverables: [
+          "3-sector horizontal partition classifier (Left 0-33%, Center 34-66%, Right 67-100%)",
+          "Coarse proximity estimator (Far, Medium, Near, Critical) based on bbox height and depth heuristics",
+          "Temporal smoothing and lightweight bounding box tracker to prevent alert flicker"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/vision/SpatialAnalyzer.kt",
+          "app/src/main/java/com/visionnav/vision/ProximityEstimator.kt",
+          "app/src/main/java/com/visionnav/vision/ObjectTracker.kt"
+        ],
+        acceptanceTest: "Detected objects correctly categorized as Left/Center/Right with coarse proximity; zero spam from flickering detections."
+      },
+      {
+        id: "phase-8",
+        phaseNumber: 8,
+        title: "Decision Engine (Sensor Fusion)",
+        domain: "Core Intelligence",
+        status: "upcoming",
+        progress: 0,
+        summary: "The fusion brain arbitrating between active route maneuvers and camera-detected obstacles to generate timely concise voice warnings.",
+        prdRequirements: ["FR-08", "Section 12"],
+        deliverables: [
+          "Sensor fusion arbitrator: Combines route status, object zone, proximity, heading, and object type",
+          "Path conflict resolver: Detects when center path is obstructed while walking straight",
+          "Anti-fatigue deduplication engine: Suppresses repeated warnings for the same obstacle",
+          "Concise voice message synthesizer ('Obstacle ahead: Pole in center. Move slightly left.')"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/core/DecisionEngine.kt",
+          "app/src/main/java/com/visionnav/core/ConflictResolver.kt",
+          "app/src/main/java/com/visionnav/core/AlertDeduplicator.kt"
+        ],
+        acceptanceTest: "Center-path obstacles immediately trigger concise avoidance guidance; peripheral obstacles do not spam."
+      },
+      {
+        id: "phase-9",
+        phaseNumber: 9,
+        title: "Full Voice Navigation Integration",
+        domain: "System Integration",
+        status: "upcoming",
+        progress: 0,
+        summary: "End-to-end integration: Spoken destination -> Geocoding -> Valhalla pedestrian route -> Turn guidance + Obstacle warnings -> Arrival.",
+        prdRequirements: ["Section 15", "Section 20"],
+        deliverables: [
+          "Unified event bus linking Audio, Location, Routing, Vision, and Decision Engine",
+          "Complete voice interaction flow with state transitions",
+          "Graceful degradation: Voice notices on loss of GPS or camera occlusion without crashing"
+        ],
+        files: [
+          "app/src/main/java/com/visionnav/navigation/NavigationController.kt"
+        ],
+        acceptanceTest: "User speaks destination, walks route guided solely by voice, receives warning on obstacle, reaches destination."
+      },
+      {
+        id: "phase-10",
+        phaseNumber: 10,
+        title: "Device Benchmarks & Physical Field Testing",
+        domain: "Quality & Testing",
+        status: "upcoming",
+        progress: 0,
+        summary: "End-to-end latency measurement on physical hardware, thermal & battery impact profiling, and final release APK generation.",
+        prdRequirements: ["Section 16", "Section 17", "Section 18"],
+        deliverables: [
+          "Physical phone benchmark suite (FPS, Camera-to-Warning latency <250ms, CPU/GPU temperature)",
+          "Battery optimization & frame rate throttling tuning",
+          "Release signed APK with complete setup and demonstration documentation"
+        ],
+        files: [
+          "docs/testing.md",
+          "docs/benchmarks.md"
+        ],
+        acceptanceTest: "APK installs on physical Android phone, operates smoothly during outdoor walking test with sighted supervisor."
+      }
+    ];
+
+    const SUBSYSTEMS_DATA = [
+      { name: "app/src/main/java/com/visionnav/ui", label: "UI & Accessibility", status: "Built", icon: "🎨", desc: "Jetpack Compose Dual-Layer interface, OLED high-contrast theme, Fitts' law touch surface, and tester HUD." },
+      { name: "app/src/main/java/com/visionnav/audio", label: "Audio & Speech", status: "Scaffolded", icon: "🎙️", desc: "Native SpeechRecognizer STT, TextToSpeech, priority audio queue, and voice command parser." },
+      { name: "app/src/main/java/com/visionnav/camera", label: "Camera Pipeline", status: "Scaffolded", icon: "📷", desc: "CameraX lifecycle provider, image buffer extraction, and thermal-aware frame rate throttling." },
+      { name: "app/src/main/java/com/visionnav/vision", label: "Vision & ML", status: "Scaffolded", icon: "👁️", desc: "YOLO26n LiteRT detector abstraction, Left/Center/Right zone classifier, and proximity estimator." },
+      { name: "app/src/main/java/com/visionnav/routing", label: "Routing & Geocoding", status: "Scaffolded", icon: "🗺️", desc: "Valhalla pedestrian costing client, OSM Nominatim geocoder, and route geometry decoder." },
+      { name: "app/src/main/java/com/visionnav/location", label: "Location & Sensors", status: "Scaffolded", icon: "📍", desc: "FusedLocationProviderClient GPS tracking, accuracy monitoring, and compass heading tracker." },
+      { name: "app/src/main/java/com/visionnav/core", label: "Decision Engine", status: "Scaffolded", icon: "🧠", desc: "Sensor fusion core, route-vs-obstacle conflict resolver, and anti-spam alert deduplication." }
+    ];
+
+    const CHANGELOG_DATA = [
+      { date: "Sept 19, 2026", hash: "aa77ddd", title: "Add Gradle wrapper scripts (gradlew, gradlew.bat)", detail: "Added official Gradle 8.6 wrapper scripts for cross-platform build execution." },
+      { date: "Sept 19, 2026", hash: "a09ef1b", title: "Initialize native Android project & Dual-Layer Jetpack Compose UI", detail: "Scaffolded Kotlin DSL build configs, libs.versions.toml, 7 architecture packages, and implemented Option A Compose UI with state simulator." },
+      { date: "Sept 19, 2026", hash: "init", title: "PRD Analysis & Architecture Alignment", detail: "Completed deep analysis of VisionNav_MVP_PRD.md covering 10-phase roadmap and safety boundaries." }
+    ];
+
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    function renderPipelineBar() {
+      const container = document.getElementById('pipelineBar');
+      container.innerHTML = ROADMAP_DATA.map((phase, idx) => {
+        let colorClass = 'bg-zinc-800 text-zinc-500';
+        if (phase.status === 'completed') colorClass = 'bg-emerald-500 text-black font-bold';
+        else if (phase.status === 'in-progress') colorClass = 'bg-amber-400 text-black font-bold animate-pulse';
+        
+        return `<a href="#${phase.id}" title="${phase.title}" class="${colorClass} flex items-center justify-center text-[10px] font-mono hover:opacity-80 transition-opacity">P${idx+1}</a>`;
+      }).join('');
+    }
+
+    function renderMilestones() {
+      const container = document.getElementById('milestoneCardsContainer');
+      const filtered = ROADMAP_DATA.filter(item => {
+        const matchesStatus = (currentFilter === 'all') || (item.status === currentFilter);
+        const matchesSearch = searchQuery === '' || 
+          item.title.toLowerCase().includes(searchQuery) ||
+          item.summary.toLowerCase().includes(searchQuery) ||
+          item.domain.toLowerCase().includes(searchQuery) ||
+          item.files.some(f => f.toLowerCase().includes(searchQuery)) ||
+          item.prdRequirements.some(r => r.toLowerCase().includes(searchQuery));
+        return matchesStatus && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center rounded-xl bg-zinc-950 border border-white/[0.08] space-y-2">
+            <p class="text-sm text-zinc-400">No milestones match your filter or search criteria.</p>
+            <button onclick="filterStatus('all')" class="text-xs font-mono text-cyan-400 hover:underline">Clear filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        let statusBadge = '';
+        if (item.status === 'completed') {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5"></span>COMPLETED</span>`;
+        } else if (item.status === 'in-progress') {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block mr-1.5 animate-pulse"></span>IN PROGRESS</span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono text-zinc-400 bg-zinc-800/50 border border-zinc-700/50">UPCOMING</span>`;
+        }
+
+        return `
+          <div id="${item.id}" class="rounded-xl bg-zinc-950/90 border border-white/[0.08] hover:border-white/[0.16] transition-all p-5 sm:p-6 space-y-4">
+            <!-- Header Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+              <div class="flex items-center space-x-3">
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-white/[0.08]">Phase ${item.phaseNumber}</span>
+                <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">${item.title}</h3>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-mono text-zinc-500 px-2 py-0.5 rounded bg-zinc-900/60 border border-white/[0.05]">${item.domain}</span>
+                ${statusBadge}
+              </div>
+            </div>
+
+            <!-- Summary -->
+            <p class="text-sm text-zinc-300 leading-relaxed">${item.summary}</p>
+
+            <!-- Key Deliverables -->
+            <div class="space-y-2 pt-1">
+              <div class="text-xs font-mono text-zinc-400 uppercase tracking-wider">Key Deliverables & Specifications:</div>
+              <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-zinc-300">
+                ${item.deliverables.map(d => `
+                  <li class="flex items-start space-x-2">
+                    <svg class="w-3.5 h-3.5 text-zinc-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <span>${d}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+
+            <!-- PRD Requirements & Acceptance Test -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs font-mono">
+              <div class="p-3 rounded-lg bg-zinc-900/50 border border-white/[0.05]">
+                <span class="text-zinc-500 block mb-1">PRD REQUIREMENTS COVERED:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${item.prdRequirements.map(req => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[11px]">${req}</span>`).join('')}
+                </div>
+              </div>
+              <div class="p-3 rounded-lg bg-zinc-900/50 border border-white/[0.05]">
+                <span class="text-zinc-500 block mb-1">ACCEPTANCE CRITERIA:</span>
+                <span class="text-zinc-300 font-sans text-xs">${item.acceptanceTest}</span>
+              </div>
+            </div>
+
+            <!-- Associated Files Drawer -->
+            <div class="pt-2">
+              <div class="text-[11px] font-mono text-zinc-500 mb-1.5">TARGET / CREATED FILES:</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${item.files.map(f => `
+                  <span class="px-2 py-1 rounded bg-black text-zinc-400 border border-white/[0.08] text-[11px] font-mono flex items-center space-x-1">
+                    <svg class="w-3 h-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <span>${f}</span>
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSubsystems() {
+      const container = document.getElementById('subsystemGrid');
+      container.innerHTML = SUBSYSTEMS_DATA.map(sub => `
+        <div class="p-4 rounded-xl bg-zinc-950 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">${sub.icon}</span>
+              <span class="text-xs font-bold text-white tracking-tight">${sub.label}</span>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded ${sub.status === 'Built' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-900 text-zinc-400 border border-white/[0.08]'}">${sub.status}</span>
+          </div>
+          <div class="text-[11px] font-mono text-zinc-500 truncate">${sub.name}</div>
+          <p class="text-xs text-zinc-400 leading-normal">${sub.desc}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderChangelog() {
+      const container = document.getElementById('changelogList');
+      container.innerHTML = CHANGELOG_DATA.map(item => `
+        <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="font-mono text-emerald-400 font-semibold">${item.hash}</span>
+              <span class="font-bold text-white">${item.title}</span>
+            </div>
+            <p class="text-zinc-400 text-xs">${item.detail}</p>
+          </div>
+          <div class="font-mono text-zinc-500 text-[11px] flex-shrink-0">${item.date}</div>
+        </div>
+      `).join('');
+    }
+
+    function filterStatus(status) {
+      currentFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = 'tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all';
+      });
+      const activeBtn = document.getElementById(`tab-${status}`);
+      if (activeBtn) {
+        activeBtn.className = 'tab-btn px-3 py-1.5 rounded-md bg-white text-black font-semibold transition-all';
+      }
+      renderMilestones();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+      renderMilestones();
+    }
+
+    // Initialize View
+    renderPipelineBar();
+    renderMilestones();
+    renderSubsystems();
+    renderChangelog();
+  </script>
+</body>
+</html>

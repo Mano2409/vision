@@ -33,3 +33,4 @@ data class AudioMessage(
     val requiresHaptic: Boolean = (priority == AudioPriority.CRITICAL_SAFETY),
     val timestamp: Long = System.currentTimeMillis()
 )
+

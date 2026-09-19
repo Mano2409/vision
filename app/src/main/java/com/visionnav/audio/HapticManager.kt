@@ -61,3 +61,4 @@ class HapticManager(context: Context) {
         vibrator?.cancel()
     }
 }
+

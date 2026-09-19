@@ -159,3 +159,4 @@ class VoiceRecognizer(
     override fun onPartialResults(partialResults: Bundle?) {}
     override fun onEvent(eventType: Int, params: Bundle?) {}
 }
+

@@ -112,7 +112,7 @@
     <div class="space-y-3">
       <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-        <span>MVP Phase 1 & Dual-Layer UI Complete</span>
+        <span>MVP Phase 1, UI, & Phase 2 (Voice + P0 Safety) Complete</span>
       </div>
       <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
         VisionNav MVP Tracker
@@ -128,14 +128,14 @@
       <div class="p-5 rounded-xl bg-zinc-950/80 border border-white/[0.08] hover:border-white/[0.16] transition-all space-y-3">
         <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
           <span>TOTAL MVP COMPLETION</span>
-          <span class="text-emerald-400">2 / 10 PHASES</span>
+          <span class="text-emerald-400">3 / 10 PHASES</span>
         </div>
         <div class="flex items-baseline space-x-2">
-          <span class="text-3xl font-black tracking-tight text-white" id="overallPercentText">20%</span>
+          <span class="text-3xl font-black tracking-tight text-white" id="overallPercentText">30%</span>
           <span class="text-xs text-zinc-500 font-mono">MVP v1.0</span>
         </div>
         <div class="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-          <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500" style="width: 20%"></div>
+          <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500" style="width: 30%"></div>
         </div>
       </div>
 
@@ -206,9 +206,9 @@
       <!-- Status Tabs -->
       <div class="flex items-center space-x-1 p-1 rounded-lg bg-zinc-900 border border-white/[0.08] overflow-x-auto text-xs font-medium">
         <button onclick="filterStatus('all')" id="tab-all" class="tab-btn px-3 py-1.5 rounded-md bg-white text-black font-semibold transition-all">All (10)</button>
-        <button onclick="filterStatus('completed')" id="tab-completed" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Completed (2)</button>
+        <button onclick="filterStatus('completed')" id="tab-completed" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Completed (3)</button>
         <button onclick="filterStatus('in-progress')" id="tab-in-progress" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">In Progress (0)</button>
-        <button onclick="filterStatus('upcoming')" id="tab-upcoming" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Upcoming (8)</button>
+        <button onclick="filterStatus('upcoming')" id="tab-upcoming" class="tab-btn px-3 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">Upcoming (7)</button>
       </div>
 
       <!-- Search Box -->
@@ -332,25 +332,30 @@
       {
         id: "phase-2",
         phaseNumber: 2,
-        title: "Voice Interface & Audio Priority Queue",
+        title: "Voice Interface & P0 Safety Audio Preemption",
         domain: "Audio & Speech",
-        status: "upcoming",
-        progress: 0,
-        summary: "Android native SpeechRecognizer (STT) and TextToSpeech (TTS) integration with voice state machine and obstacle preemption.",
-        prdRequirements: ["FR-01", "FR-09", "FR-10", "Section 10"],
+        status: "completed",
+        progress: 100,
+        summary: "Native Android SpeechRecognizer (STT), TextToSpeech (TTS), Priority Audio Queue with non-negotiable P0 Critical Safety Preemption, emergency haptics, and voice command parser.",
+        prdRequirements: ["FR-01", "FR-09", "FR-10", "PRD 18.1 (P0 Safety)"],
         deliverables: [
-          "SpeechRecognizer wrapper with continuous listening & timeout management",
-          "TextToSpeech manager with speech pitch/rate controls",
-          "Priority Audio Queue: Urgent obstacle collision alerts preempt standard turn instructions",
-          "Voice Command Parser ('Navigate to...', 'Stop navigation', 'Repeat', 'Where am I?', 'What's ahead?')"
+          "AudioPriority.kt (CRITICAL_SAFETY, STATIC_OBSTACLE, ROUTINE_NAVIGATION, SYSTEM_FEEDBACK)",
+          "HapticManager.kt (<50ms emergency dual-pulse vibration shock for collision threats)",
+          "AudioQueueManager.kt (Enforces immediate QUEUE_FLUSH, stops TTS, commands 'STOP. [VEHICLE] APPROACHING')",
+          "VoiceSpeaker.kt (Native TextToSpeech with USAGE_ASSISTANCE_SONIFICATION at 1.1x rate)",
+          "VoiceRecognizer.kt (Native SpeechRecognizer STT with RMS volume levels for UI pulse)",
+          "VoiceCommandParser.kt (Intent parser for 'Navigate to...', 'Stop', 'Repeat', 'Where am I?')",
+          "1.5s Sustained Clear Window (Hysteresis before route recovery)"
         ],
         files: [
-          "app/src/main/java/com/visionnav/audio/VoiceRecognizer.kt",
+          "app/src/main/java/com/visionnav/audio/AudioPriority.kt",
+          "app/src/main/java/com/visionnav/audio/HapticManager.kt",
           "app/src/main/java/com/visionnav/audio/VoiceSpeaker.kt",
           "app/src/main/java/com/visionnav/audio/AudioQueueManager.kt",
+          "app/src/main/java/com/visionnav/audio/VoiceRecognizer.kt",
           "app/src/main/java/com/visionnav/audio/VoiceCommandParser.kt"
         ],
-        acceptanceTest: "User speaks destination; speech converts to text. Critical alerts interrupt speaking without speech collisions."
+        acceptanceTest: "Approaching vehicle threat triggers <50ms vibration, kills turn guidance, speaks STOP, and resumes route only after 1.5s clear window."
       },
       {
         id: "phase-3",
@@ -522,7 +527,7 @@
 
     const SUBSYSTEMS_DATA = [
       { name: "app/src/main/java/com/visionnav/ui", label: "UI & Accessibility", status: "Built", icon: "🎨", desc: "Jetpack Compose Dual-Layer interface, OLED high-contrast theme, Fitts' law touch surface, and tester HUD." },
-      { name: "app/src/main/java/com/visionnav/audio", label: "Audio & Speech", status: "Scaffolded", icon: "🎙️", desc: "Native SpeechRecognizer STT, TextToSpeech, priority audio queue, and voice command parser." },
+      { name: "app/src/main/java/com/visionnav/audio", label: "Audio & Speech", status: "Built", icon: "🎙️", desc: "Native SpeechRecognizer STT, TextToSpeech, P0 priority audio preemption, emergency haptics, and voice parser." },
       { name: "app/src/main/java/com/visionnav/camera", label: "Camera Pipeline", status: "Scaffolded", icon: "📷", desc: "CameraX lifecycle provider, image buffer extraction, and thermal-aware frame rate throttling." },
       { name: "app/src/main/java/com/visionnav/vision", label: "Vision & ML", status: "Scaffolded", icon: "👁️", desc: "YOLO26n LiteRT detector abstraction, Left/Center/Right zone classifier, and proximity estimator." },
       { name: "app/src/main/java/com/visionnav/routing", label: "Routing & Geocoding", status: "Scaffolded", icon: "🗺️", desc: "Valhalla pedestrian costing client, OSM Nominatim geocoder, and route geometry decoder." },
@@ -531,6 +536,7 @@
     ];
 
     const CHANGELOG_DATA = [
+      { date: "Sept 19, 2026", hash: "phase-2", title: "Implement Phase 2: Voice Interface & P0 Safety Audio Preemption", detail: "Built AudioQueueManager, HapticManager (<50ms shock), VoiceSpeaker, VoiceRecognizer, VoiceCommandParser, and codified Section 18.1 safety rule." },
       { date: "Sept 19, 2026", hash: "aa77ddd", title: "Add Gradle wrapper scripts (gradlew, gradlew.bat)", detail: "Added official Gradle 8.6 wrapper scripts for cross-platform build execution." },
       { date: "Sept 19, 2026", hash: "a09ef1b", title: "Initialize native Android project & Dual-Layer Jetpack Compose UI", detail: "Scaffolded Kotlin DSL build configs, libs.versions.toml, 7 architecture packages, and implemented Option A Compose UI with state simulator." },
       { date: "Sept 19, 2026", hash: "init", title: "PRD Analysis & Architecture Alignment", detail: "Completed deep analysis of VisionNav_MVP_PRD.md covering 10-phase roadmap and safety boundaries." }

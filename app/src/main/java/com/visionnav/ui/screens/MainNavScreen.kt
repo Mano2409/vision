@@ -50,6 +50,7 @@ import com.visionnav.ui.theme.VisionTextMediumContrast
 @Composable
 fun MainNavScreen(
     viewModel: VisionNavViewModel,
+    onRequestAudioPermission: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -112,7 +113,13 @@ fun MainNavScreen(
             // Bottom Section: Massive Fitts' Law Touch Surface
             VoiceTouchSurface(
                 voiceState = uiState.voiceState,
-                onClick = { viewModel.onVoiceSurfaceClicked() }
+                onClick = {
+                    if (onRequestAudioPermission != null && uiState.voiceState == com.visionnav.ui.state.VoiceState.IDLE) {
+                        onRequestAudioPermission()
+                    } else {
+                        viewModel.onVoiceSurfaceClicked()
+                    }
+                }
             )
         }
 

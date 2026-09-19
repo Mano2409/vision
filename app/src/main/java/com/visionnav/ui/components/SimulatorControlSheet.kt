@@ -127,10 +127,38 @@ fun SimulatorControlSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Obstacle Detection Scenarios
+        // 🚨 P0 Safety Collision Test Section
         Text(
-            text = "INJECT COMPUTER VISION OBSTACLES",
+            text = "🚨 P0 SAFETY: VEHICLE COLLISION PREEMPTION",
             color = VisionObstacleCritical,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SimButton(text = "🚨 Lorry Approaching", color = VisionObstacleCritical) {
+                viewModel.triggerCriticalVehicleThreat("Lorry")
+            }
+            SimButton(text = "🚨 Fast Car Approaching", color = VisionObstacleCritical) {
+                viewModel.triggerCriticalVehicleThreat("Car")
+            }
+            SimButton(text = "Clear Threat (Verify 1.5s Resume)", color = Color(0xFF2A2A2A)) {
+                viewModel.clearCriticalVehicleThreat()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Static Obstacle Detection Scenarios
+        Text(
+            text = "STATIC OBSTACLE DETECTION",
+            color = VisionAmberPrimary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp

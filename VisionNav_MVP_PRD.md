@@ -234,6 +234,22 @@ Destination reached
 - Depth estimates must not be presented as precise measurements unless independently validated.
 - The app should encourage use alongside established mobility aids during testing.
 - Testing should occur first in controlled environments and with a sighted supervisor or other appropriate safety support.
+
+### 18.1 🚨 Highest-Priority Core Safety Requirement (P0 Mandatory)
+This requirement overrides all UI, route guidance, turn maneuvers, battery optimization, and feature completeness. The system must prioritize immediate physical hazard detection and pedestrian safety above all other operations.
+1. **Critical Threat Trigger:** When an approaching vehicle (car, lorry/truck, bus, motorcycle) has an intersecting trajectory with the user's path (evaluated via Time-to-Collision $\text{TTC} < 2.5\text{s}$):
+   - **Immediate Reaction (<50ms):** Hardware vibration shock (`HapticManager`) + audio alert earcon fire concurrently with `tts.stop()`.
+   - **Audio Preemption:** Routine turn instructions are strictly suppressed via `AudioQueueManager.enqueue(CRITICAL_SAFETY)`.
+   - **Authoritative Warning:**
+     - Single vehicle: **"STOP. [VEHICLE] APPROACHING."** (e.g. *"STOP. LORRY APPROACHING."*)
+     - Multiple vehicles: **"STOP. MULTIPLE VEHICLES APPROACHING."**
+     - Uncertain clear path: **"STOP. PATH NOT CLEAR."**
+2. **Anti-Evasive Guessing:** The system must **never blindly instruct the user to move left or right** in traffic unless 100% verified clear and safe. Default to commanding **"STOP"**.
+3. **Hysteresis & Recovery:** The system must continuously track the hazard and must NOT react to momentary single-frame dropouts. It may only resume normal navigation after the threat has been verified clear for **a minimum 1.5-second sustained clear window**, announcing: *"Danger cleared. Resuming route."*
+4. **Architecture Pipeline:**
+   `Camera → YOLO26n → Tracking → Depth/Distance → Motion Estimation (TTC) → Path Intersection → Risk Assessment → CRITICAL Safety Event → AudioQueueManager → VoiceSpeaker`
+   YOLO must NOT directly control TTS. The Decision Engine determines danger and priority; `AudioQueueManager` owns audio interruption/preemption; `VoiceSpeaker` only speaks the approved message.
+
 ## 19. Future Roadmap
 - Custom navigation-specific dataset and model fine-tuning.
 - Improved depth and distance validation.

@@ -82,3 +82,4 @@ data class NavUiState(
     val isDevHudVisible: Boolean = true,
     val isSimulatorDrawerOpen: Boolean = false
 )
+

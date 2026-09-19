@@ -198,3 +198,4 @@ fun SpatialVisionOverlay(
         }
     }
 }
+

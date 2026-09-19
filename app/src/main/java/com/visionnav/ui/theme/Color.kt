@@ -25,3 +25,4 @@ val VisionTextHighContrast = Color(0xFFFFFFFF)
 val VisionTextMediumContrast = Color(0xFFCCCCCC)
 val VisionTextLowContrast = Color(0xFF888888)
 val VisionTextOnAccent = Color(0xFF000000)
+

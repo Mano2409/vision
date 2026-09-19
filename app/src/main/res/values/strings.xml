@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">VisionNav</string>
+    <string name="state_idle">VisionNav Ready</string>
+    <string name="state_listening">Listening for destination...</string>
+    <string name="state_processing">Processing route...</string>
+    <string name="state_navigating">Navigating</string>
+    <string name="state_arrived">Destination Reached</string>
+    <string name="prompt_speak">Tap anywhere to speak</string>
+    <string name="prompt_stop">Tap to pause or stop</string>
+    <string name="desc_mic_button">Microphone button. Tap to speak your destination or voice command.</string>
+    <string name="desc_maneuver_card">Navigation direction card. Tap to hear previous instruction repeated.</string>
+    <string name="desc_hud_toggle">Developer and tester heads up display toggle.</string>
+</resources>

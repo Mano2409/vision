@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.onEach
 class SafetyEventDispatcher(
     private val audioQueueManager: AudioQueueManager,
     private val hapticFeedbackManager: HapticFeedbackManager,
+    private val visibilityAssistManager: VisibilityAssistManager? = null,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private var observationJob: Job? = null
@@ -40,10 +41,12 @@ class SafetyEventDispatcher(
         when (event) {
             is SafetyEvent.HazardDetected -> {
                 dispatchHazardAlert(event.level, event.spokenMessage)
+                visibilityAssistManager?.handleSafetyEvent(event)
             }
 
             is SafetyEvent.HazardEscalated -> {
                 dispatchHazardAlert(event.newLevel, event.spokenMessage)
+                visibilityAssistManager?.handleSafetyEvent(event)
             }
 
             is SafetyEvent.HazardCleared -> {

@@ -10,6 +10,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.visionnav.safety.ITorchController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,7 @@ enum class CameraStatus {
  */
 class CameraManager(
     private val context: Context
-) {
+) : ITorchController {
     private val tag = "CameraManager"
 
     private val _cameraStatus = MutableStateFlow(CameraStatus.UNINITIALIZED)
@@ -112,11 +113,36 @@ class CameraManager(
         }, ContextCompat.getMainExecutor(context))
     }
 
+    override val isAvailable: Boolean
+        get() = camera?.cameraInfo?.hasFlashUnit() == true
+
+    override fun setTorch(enabled: Boolean): Boolean {
+        return try {
+            val cam = camera
+            if (cam != null && isAvailable) {
+                cam.cameraControl.enableTorch(enabled)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to toggle torch: ${e.message}", e)
+            false
+        }
+    }
+
     /**
      * Unbinds camera use cases and releases background thread pools.
      */
     fun stopCamera() {
         try {
+            if (isAvailable) {
+                try {
+                    camera?.cameraControl?.enableTorch(false)
+                } catch (e: Exception) {
+                    // Ignore torch errors on teardown
+                }
+            }
             cameraProvider?.unbindAll()
             camera = null
             analysisExecutor?.shutdown()

@@ -26,6 +26,8 @@ import com.visionnav.simulator.SimulatorLocationProvider
 import com.visionnav.navigation.HapticFeedbackManager
 import com.visionnav.safety.SafetyEventDispatcher
 import com.visionnav.safety.SafetyRiskEngine
+import com.visionnav.safety.TorchPattern
+import com.visionnav.safety.VisibilityAssistManager
 import com.visionnav.vision.CameraFrameAnalyzer
 import com.visionnav.vision.CameraManager
 import com.visionnav.vision.DetectionFilter
@@ -50,8 +52,9 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
 
     // Phase 5 Vision & Safety Subsystem
     val safetyRiskEngine = SafetyRiskEngine()
-    private val safetyEventDispatcher = SafetyEventDispatcher(audioQueue, hapticFeedbackManager, viewModelScope)
     val cameraManager = CameraManager(application)
+    val visibilityAssistManager = VisibilityAssistManager(cameraManager, viewModelScope)
+    private val safetyEventDispatcher = SafetyEventDispatcher(audioQueue, hapticFeedbackManager, visibilityAssistManager, viewModelScope)
     val yoloDetector: IYoloDetector = MockYoloDetector()
     val detectionFilter = DetectionFilter()
     val objectTracker = ObjectTracker()
@@ -166,6 +169,13 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 }
                 _uiState.update { it.copy(activeObstacles = obstacles) }
+            }
+        }
+
+        // Observe torch state for UI feedback
+        viewModelScope.launch {
+            visibilityAssistManager.isTorchActive.collect { isActive ->
+                _uiState.update { it.copy(isTorchActive = isActive) }
             }
         }
 
@@ -721,6 +731,16 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         audioQueue.post(AudioMessage(text = msg, priority = priority))
     }
 
+    fun setVehicleVisibilityAssistEnabled(enabled: Boolean) {
+        visibilityAssistManager.setEnabled(enabled)
+        _uiState.update { it.copy(isVehicleVisibilityAssistEnabled = enabled) }
+    }
+
+    fun setTorchPattern(pattern: TorchPattern) {
+        visibilityAssistManager.setPattern(pattern)
+        _uiState.update { it.copy(torchPattern = pattern) }
+    }
+
     override fun onCleared() {
         super.onCleared()
         locationObservationJob?.cancel()
@@ -728,6 +748,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         activeLocationProvider.stop()
         activeHeadingProvider.stop()
         cameraManager.stopCamera()
+        visibilityAssistManager.release()
         safetyEventDispatcher.unbind()
         yoloDetector.close()
         audioQueue.stopAll()

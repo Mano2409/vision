@@ -431,7 +431,8 @@
           "WalkingCorridorAnalyzer with perspective ground projection",
           "SafetyRiskEngine with multi-signal CRITICAL logic, progressive escalation, and smart cooldown",
           "SafetyEventDispatcher integrating AudioQueueManager and HapticFeedbackManager",
-          "VisionScenarioSimulator with 12 deterministic test scenarios"
+          "VisionScenarioSimulator with 12 deterministic test scenarios",
+          "Phase 5B: Vehicle Visibility Assist (SOS flashlight blinking pattern on high-risk approaching vehicle, 5s cooldown, 10s timeout, toggleable)"
         ],
         files: [
           "app/src/main/java/com/visionnav/vision/CameraManager.kt",
@@ -445,9 +446,11 @@
           "app/src/main/java/com/visionnav/vision/WalkingCorridorAnalyzer.kt",
           "app/src/main/java/com/visionnav/safety/SafetyRiskEngine.kt",
           "app/src/main/java/com/visionnav/safety/SafetyEventDispatcher.kt",
+          "app/src/main/java/com/visionnav/safety/ITorchController.kt",
+          "app/src/main/java/com/visionnav/safety/VisibilityAssistManager.kt",
           "app/src/main/java/com/visionnav/simulator/VisionScenarioSimulator.kt"
         ],
-        acceptanceTest: "All 12 safety scenarios pass deterministically. AudioQueueManager preempts routine navigation on critical safety hazards. 118 unit tests passing."
+        acceptanceTest: "All 12 safety scenarios pass deterministically. AudioQueueManager preempts routine navigation on critical safety hazards. Phase 5B SOS torch assist activates safely on high-risk approaching vehicles. 130 unit tests passing."
       },
       {
         id: "phase-6",

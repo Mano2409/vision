@@ -41,6 +41,7 @@ import com.visionnav.ui.theme.VisionObstacleCritical
 import com.visionnav.ui.theme.VisionObstacleNear
 import com.visionnav.ui.theme.VisionSurfaceCard
 import com.visionnav.ui.theme.VisionSurfaceDark
+import com.visionnav.safety.TorchPattern
 import com.visionnav.ui.theme.VisionTextHighContrast
 import com.visionnav.ui.theme.VisionTextMediumContrast
 
@@ -235,6 +236,45 @@ fun SimulatorControlSheet(
             }
             SimButton(text = "Clear Threat (Verify 1.5s Resume)", color = Color(0xFF2A2A2A)) {
                 viewModel.clearCriticalVehicleThreat()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 4B: 🔦 VEHICLE VISIBILITY ASSIST (PHASE 5B)
+        Text(
+            text = "🔦 PHASE 5B: VEHICLE VISIBILITY ASSIST",
+            color = VisionCyanVoice,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Status: ${if (uiState.isVehicleVisibilityAssistEnabled) "ENABLED" else "DISABLED"} • Torch: ${if (uiState.isTorchActive) "⚡ BLINKING (${uiState.torchPattern})" else "OFF"}",
+            color = if (uiState.isTorchActive) VisionAmberPrimary else VisionTextMediumContrast,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SimButton(
+                text = if (uiState.isVehicleVisibilityAssistEnabled) "🔦 Torch Assist: ON" else "🔦 Torch Assist: OFF",
+                color = if (uiState.isVehicleVisibilityAssistEnabled) Color(0xFF1B5E20) else Color(0xFF424242)
+            ) {
+                viewModel.setVehicleVisibilityAssistEnabled(!uiState.isVehicleVisibilityAssistEnabled)
+            }
+            SimButton(
+                text = "Pattern: ${uiState.torchPattern}",
+                color = Color(0xFF263238)
+            ) {
+                val nextPattern = if (uiState.torchPattern == TorchPattern.SOS) TorchPattern.SOLID else TorchPattern.SOS
+                viewModel.setTorchPattern(nextPattern)
             }
         }
 

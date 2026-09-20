@@ -3,6 +3,7 @@ package com.visionnav.ui.state
 import com.visionnav.location.LocationConfidence
 import com.visionnav.location.NavLocation
 import com.visionnav.routing.GeocodingResult
+import com.visionnav.safety.TorchPattern
 
 enum class VoiceState {
     IDLE,
@@ -97,5 +98,8 @@ data class NavUiState(
     val telemetry: SystemTelemetry = SystemTelemetry(),
     val isDevHudVisible: Boolean = true,
     val isSimulatorDrawerOpen: Boolean = false,
-    val isSimulatorMode: Boolean = false
+    val isSimulatorMode: Boolean = false,
+    val isVehicleVisibilityAssistEnabled: Boolean = true,
+    val torchPattern: TorchPattern = TorchPattern.SOS,
+    val isTorchActive: Boolean = false
 )

@@ -458,24 +458,28 @@
         title: "Environment Understanding & Local Inference",
         domain: "Computer Vision & Environment",
         status: "in_progress",
-        progress: 50,
-        summary: "Phase 6A: Structured environmental snapshot engine converting tracking streams into semantic scene data with corridor clearance and freshness checks. Phase 6B: On-device local LiteRT ML inference.",
+        progress: 75,
+        summary: "Phase 6A: Structured environmental snapshot engine converting tracking streams into semantic scene data. Phase 6B: Advanced obstacle and walking path analyzer with temporal consistency and movement compensation.",
         prdRequirements: ["FR-06", "FR-07"],
         deliverables: [
           "Phase 6A: EnvironmentCategory taxonomy (active vs. future classes)",
           "Phase 6A: EnvironmentObject model with spatial proximity, motion vector, and corridor overlap",
           "Phase 6A: EnvironmentSnapshot with dominant scene classification, corridor clearance, and freshness timeouts",
           "Phase 6A: EnvironmentUnderstandingEngine with spatial deduplication and thread-safe StateFlow access",
-          "Phase 6B: LiteRT model loader and TFLite local inference runtime"
+          "Phase 6B: WalkingPathAnalyzer with PathStatus (OPEN, PARTIALLY_BLOCKED, BLOCKED, UNKNOWN, STALE)",
+          "Phase 6B: ObjectRelevance (DIRECTLY_IN_CORRIDOR, NEAR_CORRIDOR, OUTSIDE_CORRIDOR, UNCERTAIN)",
+          "Phase 6B: Temporal consistency smoothing & camera motion compensation (heading delta / user speed)"
         ],
         files: [
           "app/src/main/java/com/visionnav/environment/EnvironmentCategory.kt",
           "app/src/main/java/com/visionnav/environment/EnvironmentObject.kt",
           "app/src/main/java/com/visionnav/environment/EnvironmentSnapshot.kt",
           "app/src/main/java/com/visionnav/environment/EnvironmentUnderstandingEngine.kt",
+          "app/src/main/java/com/visionnav/environment/PathStatus.kt",
+          "app/src/main/java/com/visionnav/environment/WalkingPathAnalyzer.kt",
           "app/src/main/java/com/visionnav/vision/YoloDetector.kt"
         ],
-        acceptanceTest: "Phase 6A Environment Understanding Foundation complete: EnvironmentSnapshot generated with corridor clearance, dominant scene, deduplication, and freshness checking. 139 unit tests passing."
+        acceptanceTest: "Phase 6A & 6B complete: WalkingPathAnalyzer evaluates forward corridor status with temporal smoothing and movement compensation. 148 unit tests passing."
       },
       {
         id: "phase-7",

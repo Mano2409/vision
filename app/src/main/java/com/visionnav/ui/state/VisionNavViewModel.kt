@@ -24,6 +24,9 @@ import com.visionnav.routing.MockGeocodingClient
 import com.visionnav.simulator.SimulatorHeadingProvider
 import com.visionnav.simulator.SimulatorLocationProvider
 import com.visionnav.environment.EnvironmentUnderstandingEngine
+import com.visionnav.environment.PathAnalysisResult
+import com.visionnav.environment.PathStatus
+import com.visionnav.environment.WalkingPathAnalyzer
 import com.visionnav.navigation.HapticFeedbackManager
 import com.visionnav.safety.SafetyEventDispatcher
 import com.visionnav.safety.SafetyRiskEngine
@@ -60,6 +63,9 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
     val detectionFilter = DetectionFilter()
     val objectTracker = ObjectTracker()
     val environmentEngine = EnvironmentUnderstandingEngine()
+    val walkingPathAnalyzer = WalkingPathAnalyzer()
+    private val _pathAnalysis = MutableStateFlow(PathAnalysisResult(status = PathStatus.UNKNOWN, confidence = 0f, corridorObstructionRatio = 0f))
+    val pathAnalysis: StateFlow<PathAnalysisResult> = _pathAnalysis.asStateFlow()
 
     val frameAnalyzer = CameraFrameAnalyzer { frameBytes, width, height, rotation, isLowLight ->
         safetyRiskEngine.reportLowLight(isLowLight)
@@ -69,7 +75,9 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 val stableDetections = detectionFilter.filter(rawDetections)
                 val trackedObjects = objectTracker.update(stableDetections)
                 safetyRiskEngine.evaluateFrame(trackedObjects)
-                environmentEngine.evaluateFrame(trackedObjects)
+                val snapshot = environmentEngine.evaluateFrame(trackedObjects)
+                val pathResult = walkingPathAnalyzer.analyze(snapshot)
+                _pathAnalysis.value = pathResult
             } catch (e: Exception) {
                 // Analyzer error must not crash the navigation
             }
@@ -754,6 +762,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         visibilityAssistManager.release()
         safetyEventDispatcher.unbind()
         environmentEngine.clear()
+        walkingPathAnalyzer.reset()
         yoloDetector.close()
         audioQueue.stopAll()
         voiceSpeaker.shutdown()

@@ -9,6 +9,7 @@ sealed class VoiceCommand {
     object RepeatInstruction : VoiceCommand()
     object WhereAmI : VoiceCommand()
     object WhatsAhead : VoiceCommand()
+    object RepeatHazard : VoiceCommand()
     data class Unknown(val rawText: String) : VoiceCommand()
 }
 
@@ -45,13 +46,22 @@ object VoiceCommandParser {
             return VoiceCommand.RepeatInstruction
         }
 
-        // 3. Location status queries
+        // 3. Repeat hazard / safety warning commands
+        if (text == "repeat hazard" || text == "repeat warning" || text == "repeat danger" ||
+            text.contains("repeat hazard") || text.contains("repeat warning")
+        ) {
+            return VoiceCommand.RepeatHazard
+        }
+
+        // 4. Location status queries
         if (text.contains("where am i") || text.contains("current location") || text == "where are we") {
             return VoiceCommand.WhereAmI
         }
 
-        // 4. Path queries
-        if (text.contains("what's ahead") || text.contains("whats ahead") || text.contains("what is ahead") || text.contains("path status")) {
+        // 5. Path queries
+        if (text.contains("what's ahead") || text.contains("whats ahead") || text.contains("what is ahead") ||
+            text.contains("check ahead") || text == "check ahead" || text.contains("path status")
+        ) {
             return VoiceCommand.WhatsAhead
         }
 

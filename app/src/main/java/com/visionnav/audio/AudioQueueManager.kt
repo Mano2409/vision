@@ -53,7 +53,10 @@ class AudioQueueManager(
             AudioPriority.CRITICAL_SAFETY -> {
                 handleCriticalSafety(message)
             }
-            AudioPriority.STATIC_OBSTACLE -> {
+            AudioPriority.WARNING_SAFETY, AudioPriority.STATIC_OBSTACLE -> {
+                handleStaticObstacle(message)
+            }
+            AudioPriority.CAUTION_SAFETY -> {
                 handleStaticObstacle(message)
             }
             AudioPriority.ROUTINE_NAVIGATION -> {

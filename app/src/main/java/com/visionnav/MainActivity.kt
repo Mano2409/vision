@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         val audioGranted = permissions[Manifest.permission.RECORD_AUDIO] ?: false
         val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        val cameraGranted = permissions[Manifest.permission.CAMERA] ?: false
 
         if (fineLocationGranted || coarseLocationGranted) {
             viewModelRef?.startLocationUpdates()
@@ -33,6 +34,12 @@ class MainActivity : ComponentActivity() {
 
         if (audioGranted) {
             viewModelRef?.startListening()
+        }
+
+        if (cameraGranted) {
+            viewModelRef?.let { vm ->
+                vm.cameraManager.startCamera(this, vm.frameAnalyzer)
+            }
         }
     }
 
@@ -56,35 +63,49 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Check and request core location & voice permissions
+        // Check and request core location, voice, and camera permissions
         checkAndRequestPermissions {
             viewModelRef?.startLocationUpdates()
+            viewModelRef?.let { vm ->
+                if (vm.cameraManager.hasCameraPermission()) {
+                    vm.cameraManager.startCamera(this, vm.frameAnalyzer)
+                }
+            }
         }
     }
 
     override fun onStart() {
         super.onStart()
         viewModelRef?.startLocationUpdates()
+        viewModelRef?.let { vm ->
+            if (vm.cameraManager.hasCameraPermission()) {
+                vm.cameraManager.startCamera(this, vm.frameAnalyzer)
+            }
+        }
     }
 
     override fun onStop() {
         super.onStop()
         viewModelRef?.stopLocationUpdates()
+        viewModelRef?.cameraManager?.stopCamera()
     }
 
     private fun checkAndRequestPermissions(onGranted: () -> Unit) {
         val fineLocation = Manifest.permission.ACCESS_FINE_LOCATION
         val coarseLocation = Manifest.permission.ACCESS_COARSE_LOCATION
         val recordAudio = Manifest.permission.RECORD_AUDIO
+        val cameraPermission = Manifest.permission.CAMERA
 
         val fineGranted = ContextCompat.checkSelfPermission(this, fineLocation) == PackageManager.PERMISSION_GRANTED
         val coarseGranted = ContextCompat.checkSelfPermission(this, coarseLocation) == PackageManager.PERMISSION_GRANTED
         val audioGranted = ContextCompat.checkSelfPermission(this, recordAudio) == PackageManager.PERMISSION_GRANTED
+        val cameraGranted = ContextCompat.checkSelfPermission(this, cameraPermission) == PackageManager.PERMISSION_GRANTED
 
         val permissionsToRequest = mutableListOf<String>()
         if (!fineGranted) permissionsToRequest.add(fineLocation)
         if (!coarseGranted) permissionsToRequest.add(coarseLocation)
         if (!audioGranted) permissionsToRequest.add(recordAudio)
+        if (!cameraGranted) permissionsToRequest.add(cameraPermission)
 
         if (permissionsToRequest.isEmpty()) {
             onGranted()

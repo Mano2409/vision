@@ -23,6 +23,17 @@ import com.visionnav.routing.IGeocodingClient
 import com.visionnav.routing.MockGeocodingClient
 import com.visionnav.simulator.SimulatorHeadingProvider
 import com.visionnav.simulator.SimulatorLocationProvider
+import com.visionnav.navigation.HapticFeedbackManager
+import com.visionnav.safety.SafetyEventDispatcher
+import com.visionnav.safety.SafetyRiskEngine
+import com.visionnav.vision.CameraFrameAnalyzer
+import com.visionnav.vision.CameraManager
+import com.visionnav.vision.DetectionFilter
+import com.visionnav.vision.DistanceCategory
+import com.visionnav.vision.IYoloDetector
+import com.visionnav.vision.MockYoloDetector
+import com.visionnav.vision.ObjectTracker
+import com.visionnav.vision.VisionPerformanceMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,8 +44,31 @@ import kotlinx.coroutines.launch
 class VisionNavViewModel(application: Application) : AndroidViewModel(application) {
 
     private val hapticManager = HapticManager(application)
+    private val hapticFeedbackManager = HapticFeedbackManager(application)
     private val voiceSpeaker = VoiceSpeaker(application)
     private val audioQueue = AudioQueueManager(voiceSpeaker, hapticManager, viewModelScope)
+
+    // Phase 5 Vision & Safety Subsystem
+    val safetyRiskEngine = SafetyRiskEngine()
+    private val safetyEventDispatcher = SafetyEventDispatcher(audioQueue, hapticFeedbackManager, viewModelScope)
+    val cameraManager = CameraManager(application)
+    val yoloDetector: IYoloDetector = MockYoloDetector()
+    val detectionFilter = DetectionFilter()
+    val objectTracker = ObjectTracker()
+
+    val frameAnalyzer = CameraFrameAnalyzer { frameBytes, width, height, rotation, isLowLight ->
+        safetyRiskEngine.reportLowLight(isLowLight)
+        viewModelScope.launch {
+            try {
+                val rawDetections = yoloDetector.detect(frameBytes, width, height, rotation)
+                val stableDetections = detectionFilter.filter(rawDetections)
+                val trackedObjects = objectTracker.update(stableDetections)
+                safetyRiskEngine.evaluateFrame(trackedObjects)
+            } catch (e: Exception) {
+                // Analyzer error must not crash the navigation
+            }
+        }
+    }
 
     // Hardware Providers (Live Mode)
     private val liveLocationProvider = LocationProvider(application)
@@ -95,6 +129,43 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                         it
                     }
                 }
+            }
+        }
+
+        // Bind safety risk engine events to audio and haptic dispatcher
+        safetyEventDispatcher.bind(safetyRiskEngine)
+
+        // Observe safety state and map active hazards to UI obstacles for spatial overlay
+        viewModelScope.launch {
+            safetyRiskEngine.safetyState.collect { safetyState ->
+                val obstacles = safetyState.activeHazards.map { hazard ->
+                    val zone = when {
+                        hazard.currentBox.centerX < 0.33f -> SpatialZone.LEFT
+                        hazard.currentBox.centerX > 0.66f -> SpatialZone.RIGHT
+                        else -> SpatialZone.CENTER
+                    }
+                    val proximity = when (hazard.distance) {
+                        DistanceCategory.VERY_NEAR -> ProximityLevel.CRITICAL
+                        DistanceCategory.NEAR -> ProximityLevel.NEAR
+                        DistanceCategory.MEDIUM -> ProximityLevel.MEDIUM
+                        DistanceCategory.FAR, DistanceCategory.UNKNOWN -> ProximityLevel.FAR
+                    }
+                    DetectedObstacle(
+                        id = "hazard_${hazard.trackId}",
+                        label = hazard.detectionClass.label,
+                        confidence = 0.90f,
+                        boundingBox = NormalizedBoundingBox(
+                            hazard.currentBox.left,
+                            hazard.currentBox.top,
+                            hazard.currentBox.right,
+                            hazard.currentBox.bottom
+                        ),
+                        zone = zone,
+                        proximity = proximity,
+                        isBlockingPath = (zone == SpatialZone.CENTER && proximity == ProximityLevel.CRITICAL)
+                    )
+                }
+                _uiState.update { it.copy(activeObstacles = obstacles) }
             }
         }
 
@@ -312,11 +383,37 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
             }
             is VoiceCommand.WhatsAhead -> {
-                val obstacles = _uiState.value.activeObstacles
-                val msg = if (obstacles.isNotEmpty()) {
-                    "Path warning: ${obstacles.first().label} detected in ${obstacles.first().zone.name.lowercase()} zone."
+                val now = System.currentTimeMillis()
+                val safetyState = safetyRiskEngine.safetyState.value
+                val isFresh = safetyRiskEngine.isDataFresh(now, timeoutMs = 3000L)
+                val hazards = safetyRiskEngine.getActiveHazards()
+
+                val msg = when {
+                    !safetyState.isVisionAvailable -> {
+                        "Vision is currently unavailable."
+                    }
+                    !isFresh -> {
+                        "Vision data is stale. Vision unavailable."
+                    }
+                    safetyState.isLowLight -> {
+                        "Low visibility. Path cannot be reliably verified."
+                    }
+                    hazards.isNotEmpty() -> {
+                        val first = hazards.first()
+                        "${first.detectionClass.label.replaceFirstChar { it.uppercase() }} ahead, approximately ${first.distance.label.lowercase()}."
+                    }
+                    else -> {
+                        "Path ahead appears clear. Continue with caution."
+                    }
+                }
+                speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
+            }
+            is VoiceCommand.RepeatHazard -> {
+                val recentHazard = safetyRiskEngine.getLatestActiveHazard(System.currentTimeMillis(), maxAgeMs = 10000L)
+                val msg = if (recentHazard != null) {
+                    "Recent hazard: ${recentHazard.detectionClass.label} ${recentHazard.motion.name.lowercase()} at ${recentHazard.distance.label.lowercase()}."
                 } else {
-                    "Path ahead is clear. Continue walking."
+                    "No recent hazard warnings."
                 }
                 speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
             }
@@ -630,6 +727,9 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         headingObservationJob?.cancel()
         activeLocationProvider.stop()
         activeHeadingProvider.stop()
+        cameraManager.stopCamera()
+        safetyEventDispatcher.unbind()
+        yoloDetector.close()
         audioQueue.stopAll()
         voiceSpeaker.shutdown()
         voiceRecognizer.destroy()

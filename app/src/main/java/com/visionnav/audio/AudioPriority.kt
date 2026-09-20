@@ -10,20 +10,32 @@ enum class AudioPriority(val level: Int) {
     CRITICAL_SAFETY(0),
 
     /**
-     * P1: Static obstacles (poles, construction barriers, curbs) in the pedestrian path.
+     * P1: High severity safety warnings (e.g. approaching vehicles, crossing bicycles).
+     * Preempts routine navigation.
+     */
+    WARNING_SAFETY(1),
+
+    /**
+     * P2: Cautionary safety advisories (e.g. person approaching in walking corridor).
+     * Preempts routine navigation.
+     */
+    CAUTION_SAFETY(2),
+
+    /**
+     * P3: Static obstacles (poles, construction barriers, curbs) in the pedestrian path.
      * Preempts routine navigation if path is directly obstructed.
      */
-    STATIC_OBSTACLE(1),
+    STATIC_OBSTACLE(3),
 
     /**
-     * P2: Standard turn-by-turn navigation maneuvers and distance countdowns.
+     * P4: Standard turn-by-turn navigation maneuvers and distance countdowns.
      */
-    ROUTINE_NAVIGATION(2),
+    ROUTINE_NAVIGATION(4),
 
     /**
-     * P3: UI confirmations and state feedback ("Listening...", "Searching route...").
+     * P5: UI confirmations and state feedback ("Listening...", "Searching route...").
      */
-    SYSTEM_FEEDBACK(3)
+    SYSTEM_FEEDBACK(5)
 }
 
 data class AudioMessage(

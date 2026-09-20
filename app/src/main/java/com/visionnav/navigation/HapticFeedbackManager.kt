@@ -6,6 +6,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import com.visionnav.routing.ManeuverType
+import com.visionnav.safety.SafetyLevel
 
 /**
  * Manages tactile vibration feedback for pedestrian navigation events.
@@ -91,6 +92,48 @@ class HapticFeedbackManager(context: Context) {
         vibratePattern(
             timings = longArrayOf(0, 100, 80, 150, 80, 300),
             amplitudes = intArrayOf(0, 100, 0, 180, 0, 255)
+        )
+    }
+
+    /**
+     * Dispatches vibration corresponding to a SafetyLevel.
+     */
+    fun onSafetyLevel(level: SafetyLevel) {
+        when (level) {
+            SafetyLevel.CAUTION -> vibrateCaution()
+            SafetyLevel.WARNING -> vibrateWarning()
+            SafetyLevel.CRITICAL -> vibrateCritical()
+            else -> Unit
+        }
+    }
+
+    /**
+     * Safety Caution: Short crisp tap.
+     */
+    fun vibrateCaution() {
+        vibratePattern(
+            timings = longArrayOf(0, 80),
+            amplitudes = intArrayOf(0, 150)
+        )
+    }
+
+    /**
+     * Safety Warning: Strong dual pulse buzz.
+     */
+    fun vibrateWarning() {
+        vibratePattern(
+            timings = longArrayOf(0, 150, 100, 200),
+            amplitudes = intArrayOf(0, 220, 0, 240)
+        )
+    }
+
+    /**
+     * Safety Critical: Urgent repeating emergency pulses.
+     */
+    fun vibrateCritical() {
+        vibratePattern(
+            timings = longArrayOf(0, 200, 80, 300, 80, 300),
+            amplitudes = intArrayOf(0, 255, 0, 255, 0, 255)
         )
     }
 

@@ -23,9 +23,11 @@ import com.visionnav.routing.IGeocodingClient
 import com.visionnav.routing.MockGeocodingClient
 import com.visionnav.simulator.SimulatorHeadingProvider
 import com.visionnav.simulator.SimulatorLocationProvider
+import com.visionnav.environment.EntranceSearchResult
 import com.visionnav.environment.EnvironmentUnderstandingEngine
 import com.visionnav.environment.PathAnalysisResult
 import com.visionnav.environment.PathStatus
+import com.visionnav.environment.SpecializedEnvironmentDetector
 import com.visionnav.environment.WalkingPathAnalyzer
 import com.visionnav.navigation.HapticFeedbackManager
 import com.visionnav.safety.SafetyEventDispatcher
@@ -64,6 +66,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
     val objectTracker = ObjectTracker()
     val environmentEngine = EnvironmentUnderstandingEngine()
     val walkingPathAnalyzer = WalkingPathAnalyzer()
+    val specializedDetector = SpecializedEnvironmentDetector(audioQueue)
     private val _pathAnalysis = MutableStateFlow(PathAnalysisResult(status = PathStatus.UNKNOWN, confidence = 0f, corridorObstructionRatio = 0f))
     val pathAnalysis: StateFlow<PathAnalysisResult> = _pathAnalysis.asStateFlow()
 
@@ -752,6 +755,13 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(torchPattern = pattern) }
     }
 
+    /**
+     * Phase 6C: Discovers the nearest doorway or entrance.
+     */
+    fun findNearestEntrance(): EntranceSearchResult {
+        return specializedDetector.findNearestEntrance()
+    }
+
     override fun onCleared() {
         super.onCleared()
         locationObservationJob?.cancel()
@@ -763,6 +773,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         safetyEventDispatcher.unbind()
         environmentEngine.clear()
         walkingPathAnalyzer.reset()
+        specializedDetector.clear()
         yoloDetector.close()
         audioQueue.stopAll()
         voiceSpeaker.shutdown()

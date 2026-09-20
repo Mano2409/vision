@@ -455,11 +455,11 @@
       {
         id: "phase-6",
         phaseNumber: 6,
-        title: "Environment Understanding & Local Inference",
+        title: "Environment Understanding & Specialized Features",
         domain: "Computer Vision & Environment",
-        status: "in_progress",
-        progress: 75,
-        summary: "Phase 6A: Structured environmental snapshot engine converting tracking streams into semantic scene data. Phase 6B: Advanced obstacle and walking path analyzer with temporal consistency and movement compensation.",
+        status: "completed",
+        progress: 100,
+        summary: "Phase 6A: Structured environmental snapshot engine. Phase 6B: Advanced obstacle and path analyzer with movement compensation. Phase 6C: Specialized environmental features for doors, entrances, stairs, and crosswalks with entrance awareness queries.",
         prdRequirements: ["FR-06", "FR-07"],
         deliverables: [
           "Phase 6A: EnvironmentCategory taxonomy (active vs. future classes)",
@@ -468,7 +468,10 @@
           "Phase 6A: EnvironmentUnderstandingEngine with spatial deduplication and thread-safe StateFlow access",
           "Phase 6B: WalkingPathAnalyzer with PathStatus (OPEN, PARTIALLY_BLOCKED, BLOCKED, UNKNOWN, STALE)",
           "Phase 6B: ObjectRelevance (DIRECTLY_IN_CORRIDOR, NEAR_CORRIDOR, OUTSIDE_CORRIDOR, UNCERTAIN)",
-          "Phase 6B: Temporal consistency smoothing & camera motion compensation (heading delta / user speed)"
+          "Phase 6B: Temporal consistency smoothing & camera motion compensation (heading delta / user speed)",
+          "Phase 6C: SpecializedEnvironmentDetector for doors, entrances, stairs, and crosswalks",
+          "Phase 6C: Entrance awareness query (findNearestEntrance) with screen-relative direction and assistive humility",
+          "Phase 6C: Contextual audio routing via AudioQueueManager with anti-spam cooldown"
         ],
         files: [
           "app/src/main/java/com/visionnav/environment/EnvironmentCategory.kt",
@@ -477,9 +480,11 @@
           "app/src/main/java/com/visionnav/environment/EnvironmentUnderstandingEngine.kt",
           "app/src/main/java/com/visionnav/environment/PathStatus.kt",
           "app/src/main/java/com/visionnav/environment/WalkingPathAnalyzer.kt",
+          "app/src/main/java/com/visionnav/environment/SpecializedEnvironmentModels.kt",
+          "app/src/main/java/com/visionnav/environment/SpecializedEnvironmentDetector.kt",
           "app/src/main/java/com/visionnav/vision/YoloDetector.kt"
         ],
-        acceptanceTest: "Phase 6A & 6B complete: WalkingPathAnalyzer evaluates forward corridor status with temporal smoothing and movement compensation. 148 unit tests passing."
+        acceptanceTest: "Phase 6A, 6B, and 6C complete: SpecializedEnvironmentDetector evaluates doors, entrances, stairs, and crosswalks with entrance awareness and non-intrusive audio routing. 157 unit tests passing."
       },
       {
         id: "phase-7",

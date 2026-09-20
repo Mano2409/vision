@@ -7,7 +7,9 @@ enum class GeocodingErrorType {
     NO_RESULTS,
     NETWORK_ERROR,
     RATE_LIMITED,
-    SERVER_ERROR
+    SERVER_ERROR,
+    TIMEOUT,
+    INVALID_RESULT
 }
 
 /**

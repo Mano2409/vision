@@ -55,6 +55,12 @@ class NominatimGeocoder(
 
         val response = try {
             httpClient.newCall(request).execute()
+        } catch (e: java.net.SocketTimeoutException) {
+            throw GeocodingException(
+                errorType = GeocodingErrorType.TIMEOUT,
+                message = "Connection timed out connecting to Nominatim geocoder: ${e.message}",
+                cause = e
+            )
         } catch (e: IOException) {
             throw GeocodingException(
                 errorType = GeocodingErrorType.NETWORK_ERROR,
@@ -77,7 +83,15 @@ class NominatimGeocoder(
             }
 
             val bodyString = resp.body?.string() ?: return@withContext emptyList()
-            parseNominatimJson(bodyString)
+            try {
+                parseNominatimJson(bodyString)
+            } catch (e: org.json.JSONException) {
+                throw GeocodingException(
+                    errorType = GeocodingErrorType.INVALID_RESULT,
+                    message = "Malformed JSON received from Nominatim API: ${e.message}",
+                    cause = e
+                )
+            }
         }
     }
 
@@ -92,7 +106,14 @@ class NominatimGeocoder(
             val lat = latStr.toDoubleOrNull() ?: continue
             val lon = lonStr.toDoubleOrNull() ?: continue
 
+            // Validate coordinate boundaries [-90, +90] and [-180, +180]
+            if (!Destination.isValidCoordinate(lat, lon)) {
+                continue
+            }
+
             val displayName = item.optString("display_name", "Location ($lat, $lon)")
+            if (displayName.isBlank()) continue
+
             val type = item.optString("type", item.optString("class", ""))
             val placeId = item.optLong("place_id", System.currentTimeMillis() + i)
 

@@ -37,6 +37,12 @@ class PhotonGeocoder(
 
         val response = try {
             httpClient.newCall(request).execute()
+        } catch (e: java.net.SocketTimeoutException) {
+            throw GeocodingException(
+                errorType = GeocodingErrorType.TIMEOUT,
+                message = "Connection timed out connecting to Photon geocoder: ${e.message}",
+                cause = e
+            )
         } catch (e: IOException) {
             throw GeocodingException(
                 errorType = GeocodingErrorType.NETWORK_ERROR,
@@ -55,7 +61,15 @@ class PhotonGeocoder(
             }
 
             val bodyString = resp.body?.string() ?: return@withContext emptyList()
-            parsePhotonGeoJson(bodyString)
+            try {
+                parsePhotonGeoJson(bodyString)
+            } catch (e: org.json.JSONException) {
+                throw GeocodingException(
+                    errorType = GeocodingErrorType.INVALID_RESULT,
+                    message = "Malformed JSON received from Photon API: ${e.message}",
+                    cause = e
+                )
+            }
         }
     }
 
@@ -71,6 +85,11 @@ class PhotonGeocoder(
             // GeoJSON coordinates order: [longitude, latitude]
             val lon = coordinates.getDouble(0)
             val lat = coordinates.getDouble(1)
+
+            // Validate coordinate boundaries [-90, +90] and [-180, +180]
+            if (!Destination.isValidCoordinate(lat, lon)) {
+                continue
+            }
 
             val properties = feature.getJSONObject("properties")
             val name = properties.optString("name", "")
@@ -89,6 +108,8 @@ class PhotonGeocoder(
             val addressParts = listOf(street, city, state, country).filter { it.isNotBlank() && it != title }
             val addressSnippet = if (addressParts.isNotEmpty()) addressParts.joinToString(", ") else null
             val fullDisplayName = if (addressSnippet != null) "$title, $addressSnippet" else title
+
+            if (fullDisplayName.isBlank()) continue
 
             results.add(
                 GeocodingResult(

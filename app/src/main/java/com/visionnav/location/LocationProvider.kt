@@ -30,20 +30,29 @@ class LocationProvider(
 
     companion object {
         private const val TAG = "LocationProvider"
-        const val DEFAULT_WALKING_INTERVAL_MS = 1500L
-        const val MIN_UPDATE_INTERVAL_MS = 1000L
+        const val LOCATION_UPDATE_INTERVAL_MS = 1500L
+        const val LOCATION_FASTEST_INTERVAL_MS = 1000L
+        const val DEFAULT_WALKING_INTERVAL_MS = LOCATION_UPDATE_INTERVAL_MS
+        const val MIN_UPDATE_INTERVAL_MS = LOCATION_FASTEST_INTERVAL_MS
         const val STATIONARY_INTERVAL_MS = 10000L
     }
 
     private val _locationFlow = MutableStateFlow(NavLocation.UNAVAILABLE)
     override val locationFlow: StateFlow<NavLocation> = _locationFlow.asStateFlow()
 
-    private var currentIntervalMs = DEFAULT_WALKING_INTERVAL_MS
+    private var currentIntervalMs = LOCATION_UPDATE_INTERVAL_MS
     private var isRunning = false
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val lastLocation = result.lastLocation ?: return
+
+            // Validate reported coordinates strictly within [-90, +90] and [-180, +180]
+            if (!CurrentLocation.isValidCoordinate(lastLocation.latitude, lastLocation.longitude)) {
+                Log.w(TAG, "Rejected invalid GPS coordinates: lat=${lastLocation.latitude}, lon=${lastLocation.longitude}")
+                return
+            }
+
             val previous = _locationFlow.value
 
             val navLoc = NavLocation.fromAndroidLocation(

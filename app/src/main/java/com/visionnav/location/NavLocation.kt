@@ -47,6 +47,29 @@ data class NavLocation(
 
     fun distanceTo(other: NavLocation): Float = distanceTo(other.latitude, other.longitude)
 
+    /**
+     * Checks if coordinates fall within valid latitude [-90, +90] and longitude [-180, +180] bounds.
+     */
+    val isValidCoordinates: Boolean
+        get() = latitude in -90.0..90.0 &&
+                longitude in -180.0..180.0 &&
+                !latitude.isNaN() &&
+                !longitude.isNaN()
+
+    /**
+     * Converts to clean CurrentLocation domain model if location is available and valid.
+     */
+    fun toCurrentLocation(): CurrentLocation? {
+        if (!isAvailable || !isValidCoordinates) return null
+        return CurrentLocation(
+            latitude = latitude,
+            longitude = longitude,
+            accuracyMeters = accuracyMeters ?: 0f,
+            speedMetersPerSecond = speedMps,
+            timestamp = timestamp
+        )
+    }
+
     companion object {
         val UNAVAILABLE = NavLocation(isAvailable = false)
 

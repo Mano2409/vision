@@ -18,6 +18,15 @@ class CompositeGeocodingClient(
 
     companion object {
         private const val TAG = "CompositeGeocoder"
+
+        /**
+         * Normalizes search query by trimming, converting to lowercase,
+         * and collapsing repeated whitespace.
+         * Example: "  Chennai   Central  " -> "chennai central"
+         */
+        fun normalizeQuery(query: String): String {
+            return query.trim().lowercase().replace(Regex("\\s+"), " ")
+        }
     }
 
     private data class CacheEntry(
@@ -27,8 +36,22 @@ class CompositeGeocodingClient(
 
     private val memoryCache = ConcurrentHashMap<String, CacheEntry>()
 
+    /**
+     * Resolves destination query into a clean, validated Destination model.
+     * Uses the most relevant (first valid) result.
+     * Throws GeocodingException on failure.
+     */
+    suspend fun resolveDestination(query: String): Destination {
+        val results = search(query)
+        return results.firstNotNullOfOrNull { it.toDestination() }
+            ?: throw GeocodingException(
+                errorType = GeocodingErrorType.NO_RESULTS,
+                message = "No matching location found for \"$query\"."
+            )
+    }
+
     override suspend fun search(query: String): List<GeocodingResult> {
-        val normalizedKey = query.trim().lowercase()
+        val normalizedKey = normalizeQuery(query)
         if (normalizedKey.isBlank()) return emptyList()
 
         // 1. Check local in-memory cache
@@ -80,11 +103,23 @@ class CompositeGeocodingClient(
         }
 
         // 4. Both failed or returned empty
-        val networkFailure = photonError is GeocodingException && photonError.errorType == GeocodingErrorType.NETWORK_ERROR
-        if (networkFailure && nominatimError is GeocodingException && nominatimError.errorType == GeocodingErrorType.NETWORK_ERROR) {
+        val isNetworkFailure = (photonError is GeocodingException && photonError.errorType == GeocodingErrorType.NETWORK_ERROR) &&
+                (nominatimError is GeocodingException && nominatimError.errorType == GeocodingErrorType.NETWORK_ERROR)
+
+        val isTimeout = (photonError is GeocodingException && photonError.errorType == GeocodingErrorType.TIMEOUT) &&
+                (nominatimError is GeocodingException && nominatimError.errorType == GeocodingErrorType.TIMEOUT)
+
+        if (isNetworkFailure) {
             throw GeocodingException(
                 errorType = GeocodingErrorType.NETWORK_ERROR,
                 message = "Unable to connect to geocoding services. Check your internet connection."
+            )
+        }
+
+        if (isTimeout) {
+            throw GeocodingException(
+                errorType = GeocodingErrorType.TIMEOUT,
+                message = "Geocoding requests timed out. Please try again."
             )
         }
 

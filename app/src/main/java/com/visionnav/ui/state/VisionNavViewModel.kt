@@ -280,6 +280,15 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
             is VoiceCommand.NavigateTo -> {
                 processSpokenDestination(command.destination)
             }
+            is VoiceCommand.StartNavigation -> {
+                speakWithPriority("Navigation started.", AudioPriority.ROUTINE_NAVIGATION)
+            }
+            is VoiceCommand.PauseNavigation -> {
+                speakWithPriority("Navigation paused.", AudioPriority.SYSTEM_FEEDBACK)
+            }
+            is VoiceCommand.ResumeNavigation -> {
+                speakWithPriority("Navigation resumed.", AudioPriority.SYSTEM_FEEDBACK)
+            }
             is VoiceCommand.StopNavigation -> {
                 resetToIdle()
                 speakWithPriority("Navigation stopped.", AudioPriority.SYSTEM_FEEDBACK)

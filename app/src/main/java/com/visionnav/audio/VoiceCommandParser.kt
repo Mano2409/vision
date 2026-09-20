@@ -2,6 +2,9 @@ package com.visionnav.audio
 
 sealed class VoiceCommand {
     data class NavigateTo(val destination: String) : VoiceCommand()
+    object StartNavigation : VoiceCommand()
+    object PauseNavigation : VoiceCommand()
+    object ResumeNavigation : VoiceCommand()
     object StopNavigation : VoiceCommand()
     object RepeatInstruction : VoiceCommand()
     object WhereAmI : VoiceCommand()
@@ -17,13 +20,28 @@ object VoiceCommandParser {
     fun parse(rawText: String): VoiceCommand {
         val text = rawText.trim().lowercase()
 
-        // 1. Stop / Cancel commands
-        if (text == "stop" || text == "stop navigation" || text == "cancel" || text == "pause" || text == "end route") {
+        // 1. Navigation control commands
+        if (text == "start navigation" || text == "start" || text == "begin" || text == "start walking") {
+            return VoiceCommand.StartNavigation
+        }
+
+        if (text == "pause navigation" || text == "pause") {
+            return VoiceCommand.PauseNavigation
+        }
+
+        if (text == "resume navigation" || text == "resume" || text == "continue navigation" || text == "unpause") {
+            return VoiceCommand.ResumeNavigation
+        }
+
+        if (text == "stop" || text == "stop navigation" || text == "cancel" || text == "end route") {
             return VoiceCommand.StopNavigation
         }
 
         // 2. Repeat instruction commands
-        if (text == "repeat" || text == "say again" || text == "repeat instruction" || text == "what did you say") {
+        if (text == "repeat" || text == "repeat that" || text == "repeat instruction" ||
+            text == "what was that" || text == "what was that?" || text == "what did you say" ||
+            text == "say again" || text == "say that again"
+        ) {
             return VoiceCommand.RepeatInstruction
         }
 

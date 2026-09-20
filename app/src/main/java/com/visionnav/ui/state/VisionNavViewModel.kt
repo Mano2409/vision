@@ -23,6 +23,7 @@ import com.visionnav.routing.IGeocodingClient
 import com.visionnav.routing.MockGeocodingClient
 import com.visionnav.simulator.SimulatorHeadingProvider
 import com.visionnav.simulator.SimulatorLocationProvider
+import com.visionnav.environment.EnvironmentUnderstandingEngine
 import com.visionnav.navigation.HapticFeedbackManager
 import com.visionnav.safety.SafetyEventDispatcher
 import com.visionnav.safety.SafetyRiskEngine
@@ -58,6 +59,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
     val yoloDetector: IYoloDetector = MockYoloDetector()
     val detectionFilter = DetectionFilter()
     val objectTracker = ObjectTracker()
+    val environmentEngine = EnvironmentUnderstandingEngine()
 
     val frameAnalyzer = CameraFrameAnalyzer { frameBytes, width, height, rotation, isLowLight ->
         safetyRiskEngine.reportLowLight(isLowLight)
@@ -67,6 +69,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 val stableDetections = detectionFilter.filter(rawDetections)
                 val trackedObjects = objectTracker.update(stableDetections)
                 safetyRiskEngine.evaluateFrame(trackedObjects)
+                environmentEngine.evaluateFrame(trackedObjects)
             } catch (e: Exception) {
                 // Analyzer error must not crash the navigation
             }
@@ -750,6 +753,7 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
         cameraManager.stopCamera()
         visibilityAssistManager.release()
         safetyEventDispatcher.unbind()
+        environmentEngine.clear()
         yoloDetector.close()
         audioQueue.stopAll()
         voiceSpeaker.shutdown()

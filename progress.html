@@ -455,24 +455,27 @@
       {
         id: "phase-6",
         phaseNumber: 6,
-        title: "YOLO26n Local ML Inference (LiteRT)",
-        domain: "Computer Vision",
-        status: "upcoming",
-        progress: 0,
-        summary: "On-device object detection using LiteRT / TFLite runtime running completely offline with stable detector interface.",
-        prdRequirements: ["FR-06"],
+        title: "Environment Understanding & Local Inference",
+        domain: "Computer Vision & Environment",
+        status: "in_progress",
+        progress: 50,
+        summary: "Phase 6A: Structured environmental snapshot engine converting tracking streams into semantic scene data with corridor clearance and freshness checks. Phase 6B: On-device local LiteRT ML inference.",
+        prdRequirements: ["FR-06", "FR-07"],
         deliverables: [
-          "LiteRT model loader for yolo26n.tflite (INT8/FP16)",
-          "ObjectDetector abstraction interface allowing seamless model swapping",
-          "Bounding box post-processing (NMS, confidence filtering)",
-          "Inference latency and effective FPS telemetry logger"
+          "Phase 6A: EnvironmentCategory taxonomy (active vs. future classes)",
+          "Phase 6A: EnvironmentObject model with spatial proximity, motion vector, and corridor overlap",
+          "Phase 6A: EnvironmentSnapshot with dominant scene classification, corridor clearance, and freshness timeouts",
+          "Phase 6A: EnvironmentUnderstandingEngine with spatial deduplication and thread-safe StateFlow access",
+          "Phase 6B: LiteRT model loader and TFLite local inference runtime"
         ],
         files: [
-          "app/src/main/java/com/visionnav/vision/ObjectDetector.kt",
-          "app/src/main/java/com/visionnav/vision/YoloDetector.kt",
-          "app/src/main/assets/models/yolo26n.tflite"
+          "app/src/main/java/com/visionnav/environment/EnvironmentCategory.kt",
+          "app/src/main/java/com/visionnav/environment/EnvironmentObject.kt",
+          "app/src/main/java/com/visionnav/environment/EnvironmentSnapshot.kt",
+          "app/src/main/java/com/visionnav/environment/EnvironmentUnderstandingEngine.kt",
+          "app/src/main/java/com/visionnav/vision/YoloDetector.kt"
         ],
-        acceptanceTest: "YOLO26n runs locally on Android device with <50ms inference latency without internet connection."
+        acceptanceTest: "Phase 6A Environment Understanding Foundation complete: EnvironmentSnapshot generated with corridor clearance, dominant scene, deduplication, and freshness checking. 139 unit tests passing."
       },
       {
         id: "phase-7",

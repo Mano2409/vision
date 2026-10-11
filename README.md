@@ -30,14 +30,14 @@ Pedestrian physical safety **strictly overrides** all routine navigation maneuve
 
 ```mermaid
 flowchart TD
-    Camera[CameraX Feed] --> Vision[YOLO Detection & Tracking]
-    Vision --> TTC[Time-to-Collision &lt; 2.5s?]
-    TTC -- YES: Critical Hazard --> SafetyEngine[SafetyRiskEngine]
-    SafetyEngine --> Preempt[AudioQueueManager.preempt()]
-    Preempt --> Earcon[Instant Haptic Shock + Audio Earcon]
-    Preempt --> Command["STOP. [VEHICLE] APPROACHING."]
-    TTC -- NO --> DecisionEngine[Decision Engine]
-    DecisionEngine --> RouteGuidance[Turn-by-Turn Route Instructions]
+    Camera["CameraX Feed"] --> Vision["YOLO Detection and Tracking"]
+    Vision --> TTC{"Time-to-Collision < 2.5s?"}
+    TTC -- "YES: Critical Hazard" --> SafetyEngine["SafetyRiskEngine"]
+    SafetyEngine --> Preempt["AudioQueueManager Preemption"]
+    Preempt --> Earcon["Instant Haptic Shock + Audio Earcon"]
+    Preempt --> Command["STOP. VEHICLE APPROACHING."]
+    TTC -- "NO" --> DecisionEngine["Decision Engine"]
+    DecisionEngine --> RouteGuidance["Turn-by-Turn Route Instructions"]
 ```
 
 - **Collision Time-to-Collision ($\text{TTC} < 2.5\text{s}$):** When approaching vehicles (cars, buses, trucks, motorcycles) intersect the user's path, routine speech is instantly cut off (`tts.stop()`).
@@ -53,36 +53,38 @@ flowchart TD
 VisionNav is built on a clean, decoupled architecture where vision, location, routing, and speech communicate via reactive Kotlin Coroutines and StateFlow interfaces.
 
 ```mermaid
-graph TD
-    subgraph Sensors & Inputs
-        GPS[FusedLocationProvider + Azimuth]
-        MIC[Android SpeechRecognizer]
-        CAM[CameraX FrameAnalyzer]
+flowchart TD
+    subgraph Inputs["Sensors and Inputs"]
+        GPS["FusedLocationProvider + Azimuth"]
+        MIC["Android SpeechRecognizer"]
+        CAM["CameraX FrameAnalyzer"]
     end
 
-    subgraph Subsystems
-        LOC[Location & Heading Tracker]
-        VOICE[VoiceCommandParser & State Machine]
-        ROUTING[Composite Geocoder + Valhalla Client]
-        VISION[YOLO Detector + Spatial & Depth Analyzer]
+    subgraph Subsystems["Subsystems"]
+        LOC["Location and Heading Tracker"]
+        VOICE["VoiceCommandParser and State Machine"]
+        ROUTING["Composite Geocoder and Valhalla Client"]
+        VISION["YOLO Detector and Spatial Analyzer"]
     end
 
-    subgraph Core Intelligence
-        DECISION[DecisionEngine]
-        SAFETY[SafetyRiskEngine (P0)]
+    subgraph Intelligence["Core Intelligence"]
+        DECISION["Decision Engine"]
+        SAFETY["SafetyRiskEngine (P0)"]
     end
 
-    subgraph Output & Feedback
-        AUDIO[AudioQueueManager (Priority Queue)]
-        TTS[VoiceSpeaker (TextToSpeech)]
-        HAPTIC[HapticFeedbackManager]
-        UI[Jetpack Compose High-Contrast UI]
+    subgraph Output["Output and Feedback"]
+        AUDIO["AudioQueueManager Priority Queue"]
+        TTS["VoiceSpeaker (TextToSpeech)"]
+        HAPTIC["HapticFeedbackManager"]
+        UI["Jetpack Compose High-Contrast UI"]
     end
 
     GPS --> LOC
     MIC --> VOICE
     CAM --> VISION
-    LOC & VOICE & ROUTING --> DECISION
+    LOC --> DECISION
+    VOICE --> DECISION
+    ROUTING --> DECISION
     VISION --> SAFETY
     SAFETY --> AUDIO
     DECISION --> AUDIO

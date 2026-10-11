@@ -10,6 +10,7 @@ sealed class VoiceCommand {
     object WhereAmI : VoiceCommand()
     object WhatsAhead : VoiceCommand()
     object RepeatHazard : VoiceCommand()
+    data class SelectCandidate(val index: Int) : VoiceCommand()
     data class Unknown(val rawText: String) : VoiceCommand()
 }
 
@@ -19,7 +20,7 @@ sealed class VoiceCommand {
 object VoiceCommandParser {
 
     fun parse(rawText: String): VoiceCommand {
-        val text = rawText.trim().lowercase()
+        val text = rawText.trim().lowercase().trimEnd('.', '?', '!', ',')
 
         // 1. Navigation control commands
         if (text == "start navigation" || text == "start" || text == "begin" || text == "start walking") {
@@ -40,7 +41,7 @@ object VoiceCommandParser {
 
         // 2. Repeat instruction commands
         if (text == "repeat" || text == "repeat that" || text == "repeat instruction" ||
-            text == "what was that" || text == "what was that?" || text == "what did you say" ||
+            text == "what was that" || text == "what did you say" ||
             text == "say again" || text == "say that again"
         ) {
             return VoiceCommand.RepeatInstruction
@@ -65,19 +66,46 @@ object VoiceCommandParser {
             return VoiceCommand.WhatsAhead
         }
 
-        // 5. Navigate to destination
+        // 6. Disambiguation candidate selection (e.g. "first one", "option 2")
+        val candidate1Terms = listOf("first", "first one", "the first one", "option one", "option 1", "number one", "number 1", "candidate one")
+        if (candidate1Terms.contains(text)) {
+            return VoiceCommand.SelectCandidate(0)
+        }
+
+        val candidate2Terms = listOf("second", "second one", "the second one", "option two", "option 2", "number two", "number 2", "candidate two")
+        if (candidate2Terms.contains(text)) {
+            return VoiceCommand.SelectCandidate(1)
+        }
+
+        val candidate3Terms = listOf("third", "third one", "the third one", "option three", "option 3", "number three", "number 3", "candidate three")
+        if (candidate3Terms.contains(text)) {
+            return VoiceCommand.SelectCandidate(2)
+        }
+
+        // 7. Navigate to destination with expanded natural language phrases
         val navPrefixes = listOf(
+            "can you please navigate to ",
+            "can you please take me to ",
+            "please navigate to ",
+            "please take me to ",
+            "please go to ",
+            "can you navigate to ",
+            "can you take me to ",
+            "i want to go to ",
+            "i would like to go to ",
+            "i need to go to ",
             "navigate to ",
             "take me to ",
-            "go to ",
-            "route to ",
             "directions to ",
+            "route to ",
+            "head to ",
+            "go to ",
             "find "
         )
 
         for (prefix in navPrefixes) {
             if (text.startsWith(prefix)) {
-                val dest = text.removePrefix(prefix).trim()
+                val dest = text.removePrefix(prefix).trim().trimEnd('.', '?', '!', ',')
                 if (dest.isNotBlank()) {
                     return VoiceCommand.NavigateTo(capitalizeWords(dest))
                 }

@@ -23,12 +23,20 @@ class PhotonGeocoder(
         private const val LIMIT = 5
     }
 
-    override suspend fun search(query: String): List<GeocodingResult> = withContext(Dispatchers.IO) {
+    override suspend fun search(
+        query: String,
+        userLat: Double?,
+        userLon: Double?
+    ): List<GeocodingResult> = withContext(Dispatchers.IO) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return@withContext emptyList()
 
         val encodedQuery = URLEncoder.encode(trimmed, "UTF-8")
-        val url = "$BASE_URL?q=$encodedQuery&limit=$LIMIT"
+        val url = if (userLat != null && userLon != null && Destination.isValidCoordinate(userLat, userLon)) {
+            "$BASE_URL?q=$encodedQuery&limit=$LIMIT&lat=$userLat&lon=$userLon"
+        } else {
+            "$BASE_URL?q=$encodedQuery&limit=$LIMIT"
+        }
 
         val request = Request.Builder()
             .url(url)
@@ -119,7 +127,9 @@ class PhotonGeocoder(
                     longitude = lon,
                     category = if (osmValue.isNotBlank()) osmValue else null,
                     addressSnippet = addressSnippet,
-                    provider = "Photon"
+                    provider = "Photon",
+                    state = if (state.isNotBlank()) state else null,
+                    country = if (country.isNotBlank()) country else null
                 )
             )
         }

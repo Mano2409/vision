@@ -76,12 +76,16 @@ class MockGeocodingClient : IGeocodingClient {
         )
     }
 
-    override suspend fun search(query: String): List<GeocodingResult> {
+    override suspend fun search(
+        query: String,
+        userLat: Double?,
+        userLon: Double?
+    ): List<GeocodingResult> {
         val trimmed = query.trim().lowercase()
         if (trimmed.isBlank()) return emptyList()
 
         // Filter mock destinations by matching query terms
-        val matches = MOCK_DESTINATIONS.filter { destination ->
+        val rawMatches = MOCK_DESTINATIONS.filter { destination ->
             val name = destination.displayName.lowercase()
             val address = destination.addressSnippet?.lowercase() ?: ""
             val cat = destination.category?.lowercase() ?: ""
@@ -89,9 +93,9 @@ class MockGeocodingClient : IGeocodingClient {
                     trimmed.split(" ").any { word -> word.length > 2 && (name.contains(word) || address.contains(word)) }
         }
 
-        if (matches.isEmpty()) {
+        val matches = if (rawMatches.isEmpty()) {
             // If user searched for something generic in mock mode, return default test set
-            return listOf(
+            listOf(
                 GeocodingResult(
                     id = "mock_generic_${System.currentTimeMillis()}",
                     displayName = "$query (Simulated Location)",
@@ -102,9 +106,16 @@ class MockGeocodingClient : IGeocodingClient {
                     provider = "SIMULATOR_MOCK"
                 )
             )
+        } else {
+            rawMatches
         }
 
-        return matches
+        return if (userLat != null && userLon != null && Destination.isValidCoordinate(userLat, userLon)) {
+            matches.map { it.withDistanceTo(userLat, userLon) }
+                .sortedBy { it.distanceMeters ?: Double.MAX_VALUE }
+        } else {
+            matches
+        }
     }
 }
 

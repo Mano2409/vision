@@ -46,9 +46,13 @@ class GeocodingClientTest {
         private val shouldThrow: Throwable? = null
     ) : IGeocodingClient {
         var callCount = 0
+        var lastUserLat: Double? = null
+        var lastUserLon: Double? = null
 
-        override suspend fun search(query: String): List<GeocodingResult> {
+        override suspend fun search(query: String, userLat: Double?, userLon: Double?): List<GeocodingResult> {
             callCount++
+            lastUserLat = userLat
+            lastUserLon = userLon
             if (shouldThrow != null) throw shouldThrow
             return resultsToReturn
         }
@@ -346,5 +350,140 @@ class GeocodingClientTest {
 
         // Verify normalization function directly
         assertEquals("chennai central", CompositeGeocodingClient.normalizeQuery("  Chennai   Central  "))
+    }
+
+    // ==========================================
+    // LOCATION-AWARE GEOCODING TESTS (23 - 29)
+    // ==========================================
+
+    @Test
+    fun `TEST 23 - Current GPS coordinates are passed to geocoders`() = runBlocking {
+        val primary = FakeGeocoder(resultsToReturn = listOf(
+            GeocodingResult("1", "Local Place", 13.0827, 80.2707, provider = "Photon")
+        ))
+        val composite = CompositeGeocodingClient(primary, FakeGeocoder())
+
+        composite.search("Local Place", userLat = 13.0827, userLon = 80.2707)
+        assertEquals(13.0827, primary.lastUserLat!!, 0.0001)
+        assertEquals(80.2707, primary.lastUserLon!!, 0.0001)
+    }
+
+    @Test
+    fun `TEST 24 - Photon receives geographic context when coordinates provided`() = runBlocking {
+        var requestedUrl: String? = null
+        val interceptor = Interceptor { chain ->
+            requestedUrl = chain.request().url.toString()
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body("""{"features":[]}""".toResponseBody("application/json".toMediaType()))
+                .build()
+        }
+        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
+        val geocoder = PhotonGeocoder(client)
+
+        geocoder.search("Central Station", userLat = 13.0827, userLon = 80.2707)
+        assertNotNull(requestedUrl)
+        assertTrue(requestedUrl!!.contains("lat=13.0827"))
+        assertTrue(requestedUrl!!.contains("lon=80.2707"))
+    }
+
+    @Test
+    fun `TEST 25 - Nominatim receives viewbox when coordinates provided`() = runBlocking {
+        var requestedUrl: String? = null
+        val interceptor = Interceptor { chain ->
+            requestedUrl = chain.request().url.toString()
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body("""[]""".toResponseBody("application/json".toMediaType()))
+                .build()
+        }
+        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
+        val geocoder = NominatimGeocoder(client)
+
+        geocoder.search("Central Station", userLat = 13.0827, userLon = 80.2707)
+        assertNotNull(requestedUrl)
+        assertTrue(requestedUrl!!.contains("viewbox="))
+        assertTrue(requestedUrl!!.contains("bounded=0"))
+    }
+
+    @Test
+    fun `TEST 26 - Nearby candidate beats distant candidate in proximity ranking`() = runBlocking {
+        // User at Chennai (13.0827, 80.2707)
+        val userLat = 13.0827
+        val userLon = 80.2707
+
+        val distantGeneva = GeocodingResult("1", "Geneva, Switzerland", 46.2102, 6.1426, provider = "Photon")
+        val distantVancouver = GeocodingResult("2", "Vancouver, Canada", 49.2856, -123.1116, provider = "Photon")
+        val distantDelhi = GeocodingResult("3", "Delhi, India", 28.6734, 77.2897, provider = "Photon")
+        val nearbyCandidate = GeocodingResult("4", "Chennai Metro Station", 13.0820, 80.2710, provider = "Photon")
+
+        val candidates = listOf(distantGeneva, distantVancouver, distantDelhi, nearbyCandidate)
+        val composite = CompositeGeocodingClient(FakeGeocoder(), FakeGeocoder())
+        val ranked = composite.rankCandidates(candidates, userLat, userLon)
+
+        assertEquals("Chennai Metro Station", ranked.first().displayName)
+        assertNotNull(ranked.first().distanceMeters)
+        assertTrue(ranked.first().distanceMeters!! < 1000.0) // < 1 km
+        assertEquals("Vancouver, Canada", ranked.last().displayName)
+    }
+
+    @Test
+    fun `TEST 27 - Photon returning only distant candidates triggers Nominatim fallback`() = runBlocking {
+        val userLat = 13.0827
+        val userLon = 80.2707
+
+        // Photon returns only distant results (> 1000 km, e.g. Geneva at 7500 km)
+        val photonDistant = listOf(
+            GeocodingResult("1", "Geneva Station", 46.2102, 6.1426, provider = "Photon"),
+            GeocodingResult("2", "Vancouver Station", 49.2856, -123.1116, provider = "Photon")
+        )
+        // Nominatim returns a local result (1 km away)
+        val nominatimLocal = listOf(
+            GeocodingResult("3", "Chennai Central Metro", 13.0825, 80.2763, provider = "Nominatim")
+        )
+
+        val primary = FakeGeocoder(resultsToReturn = photonDistant)
+        val fallback = FakeGeocoder(resultsToReturn = nominatimLocal)
+        val composite = CompositeGeocodingClient(primary, fallback)
+
+        val results = composite.search("Metro Station", userLat, userLon)
+
+        assertEquals(1, primary.callCount)
+        assertEquals(1, fallback.callCount) // Nominatim WAS triggered despite non-empty Photon!
+        assertEquals("Chennai Central Metro", results.first().displayName)
+        assertEquals("Nominatim", results.first().provider)
+    }
+
+    @Test
+    fun `TEST 28 - Geocoding without GPS coordinates succeeds without crashing`() = runBlocking {
+        val mockResults = listOf(
+            GeocodingResult("1", "Eiffel Tower", 48.8584, 2.2945, provider = "Photon")
+        )
+        val primary = FakeGeocoder(resultsToReturn = mockResults)
+        val composite = CompositeGeocodingClient(primary, FakeGeocoder())
+
+        val results = composite.search("Eiffel Tower", userLat = null, userLon = null)
+        assertEquals(1, results.size)
+        assertEquals("Eiffel Tower", results.first().displayName)
+    }
+
+    @Test
+    fun `TEST 29 - Destination sanity check detects distant anomalies`() {
+        // User at Chennai (13.0827, 80.2707)
+        val userLat = 13.0827
+        val userLon = 80.2707
+
+        val nearbyDest = Destination(13.0825, 80.2763, "Chennai Central", GeocodingSource.PHOTON)
+        val genevaDest = Destination(46.2102, 6.1426, "Geneva", GeocodingSource.PHOTON)
+
+        assertTrue("Nearby destination should be reasonable", nearbyDest.isReasonableForOrigin(userLat, userLon))
+        assertFalse("Geneva (7500 km) should NOT be reasonable for Chennai pedestrian origin",
+            genevaDest.isReasonableForOrigin(userLat, userLon, maxDistanceMeters = 1_000_000.0))
     }
 }

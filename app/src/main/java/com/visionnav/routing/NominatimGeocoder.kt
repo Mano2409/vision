@@ -31,7 +31,11 @@ class NominatimGeocoder(
         private var lastRequestTimestampMs = 0L
     }
 
-    override suspend fun search(query: String): List<GeocodingResult> = withContext(Dispatchers.IO) {
+    override suspend fun search(
+        query: String,
+        userLat: Double?,
+        userLon: Double?
+    ): List<GeocodingResult> = withContext(Dispatchers.IO) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return@withContext emptyList()
 
@@ -46,7 +50,16 @@ class NominatimGeocoder(
         }
 
         val encodedQuery = URLEncoder.encode(trimmed, "UTF-8")
-        val url = "$BASE_URL?format=json&q=$encodedQuery&limit=$LIMIT&addressdetails=1"
+        val url = if (userLat != null && userLon != null && Destination.isValidCoordinate(userLat, userLon)) {
+            val minLon = (userLon - 1.5).coerceIn(-180.0, 180.0)
+            val maxLon = (userLon + 1.5).coerceIn(-180.0, 180.0)
+            val minLat = (userLat - 1.5).coerceIn(-90.0, 90.0)
+            val maxLat = (userLat + 1.5).coerceIn(-90.0, 90.0)
+            val viewbox = "$minLon,$maxLat,$maxLon,$minLat"
+            "$BASE_URL?format=json&q=$encodedQuery&limit=$LIMIT&addressdetails=1&viewbox=$viewbox&bounded=0"
+        } else {
+            "$BASE_URL?format=json&q=$encodedQuery&limit=$LIMIT&addressdetails=1"
+        }
 
         val request = Request.Builder()
             .url(url)
@@ -117,6 +130,10 @@ class NominatimGeocoder(
             val type = item.optString("type", item.optString("class", ""))
             val placeId = item.optLong("place_id", System.currentTimeMillis() + i)
 
+            val addressObj = item.optJSONObject("address")
+            val state = addressObj?.optString("state", "") ?: ""
+            val country = addressObj?.optString("country", "") ?: ""
+
             results.add(
                 GeocodingResult(
                     id = "nominatim_$placeId",
@@ -125,7 +142,9 @@ class NominatimGeocoder(
                     longitude = lon,
                     category = if (type.isNotBlank()) type else null,
                     addressSnippet = displayName,
-                    provider = "Nominatim"
+                    provider = "Nominatim",
+                    state = if (state.isNotBlank()) state else null,
+                    country = if (country.isNotBlank()) country else null
                 )
             )
         }

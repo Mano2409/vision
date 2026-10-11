@@ -57,4 +57,42 @@ class VoiceNavigationIntegrationTest {
         assertTrue(updatedLoc.latitude > 0.0)
         assertEquals(135f, updatedHeading!!, 0.1f)
     }
+
+    @Test
+    fun `TEST 16 - Natural conversational voice phrases extract destination correctly`() {
+        val testCases = mapOf(
+            "I want to go to Central Station" to "Central Station",
+            "Please navigate to Central Station" to "Central Station",
+            "Can you take me to Central Station" to "Central Station",
+            "Please take me to Central Station" to "Central Station",
+            "Take me to Central Station" to "Central Station",
+            "Go to Central Station" to "Central Station",
+            "Navigate to Central Station." to "Central Station",
+            "Head to Central Station!" to "Central Station"
+        )
+
+        for ((input, expectedDest) in testCases) {
+            val command = VoiceCommandParser.parse(input)
+            assertTrue("Input '$input' should produce NavigateTo command", command is VoiceCommand.NavigateTo)
+            val navCmd = command as VoiceCommand.NavigateTo
+            assertEquals("Input '$input' should extract '$expectedDest'", expectedDest.lowercase(), navCmd.destination.lowercase())
+        }
+    }
+
+    @Test
+    fun `TEST 17 - VoiceCommandParser parses disambiguation candidate selections`() {
+        val firstCases = listOf("first", "first one", "the first one", "option one", "option 1", "number one", "number 1")
+        for (input in firstCases) {
+            val cmd = VoiceCommandParser.parse(input)
+            assertTrue("'$input' should parse as SelectCandidate", cmd is VoiceCommand.SelectCandidate)
+            assertEquals(0, (cmd as VoiceCommand.SelectCandidate).index)
+        }
+
+        val secondCases = listOf("second", "second one", "the second one", "option two", "option 2", "number two", "number 2")
+        for (input in secondCases) {
+            val cmd = VoiceCommandParser.parse(input)
+            assertTrue("'$input' should parse as SelectCandidate", cmd is VoiceCommand.SelectCandidate)
+            assertEquals(1, (cmd as VoiceCommand.SelectCandidate).index)
+        }
+    }
 }

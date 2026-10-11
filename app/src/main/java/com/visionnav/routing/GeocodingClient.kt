@@ -27,8 +27,13 @@ class GeocodingException(
 interface IGeocodingClient {
     /**
      * Resolves a place query string (e.g. "Chennai Central") into a list of candidate results.
+     * Optionally accepts current user GPS coordinates to bias results geographically.
      * Returns empty list or throws GeocodingException on failure.
      */
-    suspend fun search(query: String): List<GeocodingResult>
+    suspend fun search(
+        query: String,
+        userLat: Double? = null,
+        userLon: Double? = null
+    ): List<GeocodingResult>
 }
 

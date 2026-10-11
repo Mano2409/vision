@@ -12,3 +12,6 @@ captures/
 *.aab
 *.dex
 *.hprof
+.cph/
+*/.cph/
+.kilo/

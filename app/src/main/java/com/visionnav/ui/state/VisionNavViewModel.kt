@@ -441,6 +441,19 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
             }
+            is VoiceCommand.SelectCandidate -> {
+                if (_uiState.value.navigationStatus == NavigationStatus.AMBIGUOUS_DESTINATION) {
+                    val candidate = _uiState.value.ambiguousCandidates.getOrNull(command.index)
+                    if (candidate != null) {
+                        selectDestinationCandidate(candidate)
+                    } else {
+                        val msg = "Please choose a valid option."
+                        speakWithPriority(msg, AudioPriority.SYSTEM_FEEDBACK)
+                    }
+                } else {
+                    processSpokenDestination(text)
+                }
+            }
             is VoiceCommand.Unknown -> {
                 processSpokenDestination(command.rawText)
             }
@@ -466,8 +479,12 @@ class VisionNavViewModel(application: Application) : AndroidViewModel(applicatio
             audioQueue.post(AudioMessage(text = searchMsg, priority = AudioPriority.SYSTEM_FEEDBACK))
 
             try {
+                val currentLoc = _uiState.value.currentLocation
+                val userLat = if (currentLoc.isAvailable && currentLoc.isValidCoordinates) currentLoc.latitude else null
+                val userLon = if (currentLoc.isAvailable && currentLoc.isValidCoordinates) currentLoc.longitude else null
+
                 val client = if (_uiState.value.isSimulatorMode) mockGeocodingClient else compositeGeocodingClient
-                val results = client.search(destinationQuery)
+                val results = client.search(destinationQuery, userLat, userLon)
 
                 when {
                     results.isEmpty() -> {

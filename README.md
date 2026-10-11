@@ -251,3 +251,4 @@ To connect this local project to your personal GitHub repository (`Mano2409/visi
 ## 📄 License
 
 This project is open-source under the [MIT License](LICENSE) (or Apache 2.0).
+

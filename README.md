@@ -8,8 +8,7 @@
 [![CameraX](https://img.shields.io/badge/Camera-CameraX-00C853?style=flat-square)](https://developer.android.com/training/camerax)
 [![Routing](https://img.shields.io/badge/Routing-OpenStreetMap%20%2F%20Valhalla-00BCD4?style=flat-square&logo=openstreetmap&logoColor=white)](https://valhalla.github.io/valhalla/)
 [![Vision](https://img.shields.io/badge/Inference-LiteRT%20%2F%20YOLO26n-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)](https://ai.google.dev/edge/litert)
-[![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%20AAA-brightgreen?style=flat-square)](https://www.w3.org/WAI/standards-guidelines/wcag/)
-[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=flat-square)](https://github.com/Mano2409/vision)
+[![Accessibility](https://img.shields.io/badge/UI-Designed%20toward%20WCAG%20AAA%20Targets-brightgreen?style=flat-square)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 ---
 
@@ -24,6 +23,15 @@ VisionNav bridges this critical gap by fusing:
 
 ---
 
+## 📸 Demo
+
+<!-- Placeholder for Demo media -->
+- ![Navigation Maneuver Card](docs/media/screenshot-navigation.png)
+- ![Spatial Vision Overlay](docs/media/screenshot-vision-overlay.png)
+- ![Voice Navigation Walkthrough](docs/media/demo-walkthrough.gif)
+
+---
+
 ## 🚨 P0 Mandatory Pedestrian Safety Architecture
 
 Pedestrian physical safety **strictly overrides** all routine navigation maneuvers, UI animations, and battery-saving cycles.
@@ -31,7 +39,7 @@ Pedestrian physical safety **strictly overrides** all routine navigation maneuve
 ```mermaid
 flowchart TD
     Camera["CameraX Feed"] --> Vision["YOLO Detection and Tracking"]
-    Vision --> TTC{"Time-to-Collision < 2.5s?"}
+    Vision --> TTC{"Time-to-Collision under 2.5s?"}
     TTC -- "YES: Critical Hazard" --> SafetyEngine["SafetyRiskEngine"]
     SafetyEngine --> Preempt["AudioQueueManager Preemption"]
     Preempt --> Earcon["Instant Haptic Shock + Audio Earcon"]
@@ -73,7 +81,7 @@ flowchart TD
     end
 
     subgraph Output["Output and Feedback"]
-        AUDIO["AudioQueueManager Priority Queue"]
+        AUDIO["AudioQueueManager (Priority Queue)"]
         TTS["VoiceSpeaker (TextToSpeech)"]
         HAPTIC["HapticFeedbackManager"]
         UI["Jetpack Compose High-Contrast UI"]
@@ -112,6 +120,23 @@ VisionNav is currently under active development. Below is the progress status ba
 | **9** | **Live Voice Navigation Field Trials** | End-to-end destination $\to$ routing $\to$ obstacle detection $\to$ speech field verification | ⏳ **Upcoming** |
 | **10** | **Optimization & Release APK** | Thermal throttling mitigation, battery optimization, signed APK build | ⏳ **Upcoming** |
 
+### What works vs. what is simulated
+
+| Component | Status |
+| :--- | :--- |
+| **UI Scaffold & High-Contrast Theme (Phase 1)** | Working |
+| **Voice Interface & Audio Preemption (Phase 2)** | Working |
+| **Location & Azimuth Heading Tracking (Phase 3)** | Working |
+| **Nominatim / Photon Composite Geocoding (Phase 3)** | Working |
+| **Valhalla Pedestrian Routing (Phase 4)** | Simulated (verified via `SimulatorRoutePlayer`) |
+| **CameraX Pipeline & Torch Assist (Phase 5)** | Working |
+| **YOLO Spatial Corridor Analysis (Phase 6)** | Simulated (verified via `VisionScenarioSimulator`) |
+| **P0 Critical Collision Safety Engine (Phase 6)** | Simulated (verified via `VisionScenarioSimulator`) |
+| **On-Device Model Quantization & Depth (Phase 7)** | In progress |
+| **Full Decision Engine Hardware Integration (Phase 8)** | Planned |
+| **Voice Navigation Field Trials (Phase 9)** | Planned |
+| **Optimization & Release APK (Phase 10)** | Planned |
+
 ---
 
 ## 🌟 Key Features
@@ -143,7 +168,7 @@ VisionNav is currently under active development. Below is the progress status ba
   - `VisionScenarioSimulator`: Injects obstacle scenarios (approaching vehicles, blocked sidewalks, low-light conditions) for automated verification.
 
 ### 5. High-Contrast Accessibility UI
-- Designed to meet **WCAG AAA** contrast standards (pure black background `#000000`, vibrant high-contrast accents).
+- High-contrast UI designed toward **WCAG AAA** contrast targets (pure black background `#000000`, vibrant high-contrast accents).
 - Full-screen touch surface for speech input.
 - Developer telemetry overlay showing active FPS, inference latency, GPS accuracy, and compass bearing.
 
@@ -213,35 +238,6 @@ vision/
 
 ---
 
-## 🔗 Pushing to Your GitHub Repository
-
-To connect this local project to your personal GitHub repository (`Mano2409/vision`):
-
-1. **Create the repository on GitHub:**
-   - Go to [github.com/new](https://github.com/new)
-   - Repository name: `vision`
-   - Visibility: Public or Private (do not initialize with README)
-
-2. **Update the Git remote and push:**
-   ```bash
-   # Point origin to your GitHub account
-   git remote set-url origin https://github.com/Mano2409/vision.git
-
-   # Verify remote URL
-   git remote -v
-
-   # Stage changes and commit
-   git add .
-   git commit -m "feat: complete phases 1-6C and add comprehensive README"
-
-   # Push to main branch
-   git push -u origin main
-   ```
-
-*(If your GitHub repository was created with an initial commit, use `git push -u origin main --force` or rebase prior to pushing).*
-
----
-
 ## ⚠️ Assistive Technology Disclaimer
 
 > **IMPORTANT NOTICE:**  
@@ -252,5 +248,5 @@ To connect this local project to your personal GitHub repository (`Mano2409/visi
 
 ## 📄 License
 
-This project is open-source under the [MIT License](LICENSE) (or Apache 2.0).
+This project is open-source under the [MIT License](LICENSE).
 
